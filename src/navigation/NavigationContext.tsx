@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { AppLanguage, Scheme } from '../types';
+import { AppLanguage } from '../types';
 import { translations, TranslationKey } from '../translations/translations';
 
 export type ScreenName = 
@@ -9,7 +9,8 @@ export type ScreenName =
   | 'Application' 
   | 'Track' 
   | 'Profile'
-  | 'DigiLocker';
+  | 'DigiLocker'
+  | 'Auth';
 
 interface ScreenState {
   name: ScreenName;
@@ -26,8 +27,9 @@ interface NavigationContextType {
   screenStack: ScreenState[];
   pushScreen: (name: ScreenName, params?: any) => void;
   popScreen: () => void;
+  resetNavigation: (screenName?: ScreenName) => void;
   currentScreen: ScreenState;
-  t: (key: TranslationKey, categoryKey?: string) => string;
+  t: (key: TranslationKey, params?: Record<string, string>) => string;
   tCategory: (categoryName: string) => string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -61,11 +63,10 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     setTabState(tab);
-    // When changing tabs, clear stack and set root screen for that tab
     const rootScreenMap: Record<TabName, ScreenName> = {
       Home: 'Home',
       Schemes: 'Discover',
-      AI: 'Home', // Fallback
+      AI: 'Home',
       Track: 'Track',
       Profile: 'Profile'
     };
@@ -85,16 +86,28 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const resetNavigation = (screenName: ScreenName = 'Home') => {
+    setTabState(screenName === 'Profile' ? 'Profile' : screenName === 'Track' ? 'Track' : screenName === 'Discover' ? 'Schemes' : 'Home');
+    setScreenStack([{ name: screenName }]);
+  };
+
   const currentScreen = screenStack[screenStack.length - 1] || { name: 'Home' };
 
-  // Translation helper
-  const t = (key: TranslationKey): string => {
+  // Translation helper with parameter interpolation
+  const t = (key: TranslationKey, params?: Record<string, string>): string => {
     const translationSet = translations[activeLanguage];
-    const text = translationSet[key];
-    if (typeof text === 'string') {
-      return text;
+    let text = translationSet[key];
+    if (typeof text !== 'string') {
+      text = (translations['en'][key] as string) || String(key);
     }
-    return translations['en'][key] as string || String(key);
+
+    if (params && typeof text === 'string') {
+      Object.keys(params).forEach(paramKey => {
+        text = (text as string).replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
+      });
+    }
+
+    return text as string;
   };
 
   const tCategory = (categoryName: string): string => {
@@ -114,6 +127,7 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
         screenStack,
         pushScreen,
         popScreen,
+        resetNavigation,
         currentScreen,
         t,
         tCategory,

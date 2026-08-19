@@ -1,16 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
+import { useAuth } from '../context/AuthContext';
 import { mockSchemes } from '../data/mockData';
 import { SchemeCard } from '../components/SchemeCard';
 
 export const HomeScreen = () => {
   const { t, setVoiceAssistantVisible, pushScreen, setTab } = useAppNavigation();
+  const { user } = useAuth();
 
   // Find PM-KISAN to display as recommended
   const recommendedScheme = mockSchemes.find((s) => s.id === 'pm-kisan') || mockSchemes[0];
+
+  // Dynamic Citizen Display Name
+  const citizenFirstName = user?.name ? user.name.split(' ')[0] : t('defaultCitizenName');
 
   const stats = [
     {
@@ -41,9 +46,11 @@ export const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Greetings */}
+      {/* Dynamic Greetings */}
       <View style={styles.greetingContainer}>
-        <Text style={styles.greetingText}>{t('greeting')}</Text>
+        <Text style={styles.greetingText}>
+          {t('greeting', { name: citizenFirstName })}
+        </Text>
         <Text style={styles.subGreetingText}>{t('subGreeting')}</Text>
       </View>
 

@@ -1,0 +1,193 @@
+{
+  "users": [
+    {
+      "id": "usr_1787158556604_fofgj",
+      "name": "Aarav Sharma",
+      "phone": "9876543210",
+      "email": "9876543210@sugamseva.gov.in",
+      "password_hash": "$2b$10$alxM5GSdROCAWwncn6iUrOrj3A/0lJY/ftbv6X63RVWylKvt3mLTS",
+      "avatar": "https://api.dicebear.com/7.x/initials/png?seed=Aarav%20Sharma&backgroundColor=047857",
+      "created_at": "2026-08-19T16:55:56.605Z",
+      "updated_at": "2026-08-19T16:55:56.605Z"
+    },
+    {
+      "id": "usr_1787159294804_b1y7p",
+      "name": "Priya R. Patel",
+      "phone": "9988776655",
+      "email": "priya.patel.official@karnataka.gov.in",
+      "password_hash": "$2b$10$SDAV1Wd.HUJde2YtB1vUV.xF9IxW7Vpy.XWCal2SMjIKwBmAHLHZy",
+      "avatar": "https://api.dicebear.com/7.x/initials/png?seed=Priya%20Patel&backgroundColor=047857",
+      "created_at": "2026-08-19T17:08:14.805Z",
+      "updated_at": "2026-08-19T17:08:15.413Z"
+    }
+  ],
+  "fingerprints": [
+    {
+      "id": "fp_usr_1787158556604_fofgj_0",
+      "user_id": "usr_1787158556604_fofgj",
+      "finger_index": 0,
+      "finger_name": "Right Thumb",
+      "biometric_template": "BIO_SHA256_dXNyXzE3ODcxNTg1NTY2MDRfZm9mZ2pfMF8xNzg3MTU4NTU2ODcw",
+      "scan_quality": 98,
+      "enrolled_at": "2026-08-19T16:55:56.605Z",
+      "last_verified_at": "2026-08-19T16:56:37.633Z"
+    },
+    {
+      "id": "fp_usr_1787158556604_fofgj_1",
+      "user_id": "usr_1787158556604_fofgj",
+      "finger_index": 1,
+      "finger_name": "Right Index",
+      "biometric_template": "BIO_SHA256_dXNyXzE3ODcxNTg1NTY2MDRfZm9mZ2pfMV8xNzg3MTU4NTU2ODgw",
+      "scan_quality": 97,
+      "enrolled_at": "2026-08-19T16:55:56.605Z",
+      "last_verified_at": "2026-08-19T16:55:56.605Z"
+    },
+    {
+      "id": "fp_usr_1787158556604_fofgj_2",
+      "user_id": "usr_1787158556604_fofgj",
+      "finger_index": 2,
+      "finger_name": "Left Thumb",
+      "biometric_template": "BIO_SHA256_dXNyXzE3ODcxNTg1NTY2MDRfZm9mZ2pfMl8xNzg3MTU4NTU2ODg2",
+      "scan_quality": 96,
+      "enrolled_at": "2026-08-19T16:55:56.605Z",
+      "last_verified_at": "2026-08-19T16:55:56.605Z"
+    },
+    {
+      "id": "fp_usr_1787158556604_fofgj_3",
+      "user_id": "usr_1787158556604_fofgj",
+      "finger_index": 3,
+      "finger_name": "Left Index",
+      "biometric_template": "BIO_SHA256_dXNyXzE3ODcxNTg1NTY2MDRfZm9mZ2pfM18xNzg3MTU4NTU2ODkz",
+      "scan_quality": 99,
+      "enrolled_at": "2026-08-19T16:55:56.605Z",
+      "last_verified_at": "2026-08-19T16:55:56.605Z"
+    },
+    {
+      "id": "fp_usr_1787159294804_b1y7p_0",
+      "user_id": "usr_1787159294804_b1y7p",
+      "finger_index": 0,
+      "finger_name": "Right Thumb",
+      "biometric_template": "BIO_SHA256_PRIYA_RT",
+      "scan_quality": 98,
+      "enrolled_at": "2026-08-19T17:08:14.805Z",
+      "last_verified_at": "2026-08-19T17:08:15.333Z"
+    },
+    {
+      "id": "fp_usr_1787159294804_b1y7p_1",
+      "user_id": "usr_1787159294804_b1y7p",
+      "finger_index": 1,
+      "finger_name": "Right Index",
+      "biometric_template": "BIO_SHA256_PRIYA_RI",
+      "scan_quality": 97,
+      "enrolled_at": "2026-08-19T17:08:14.805Z",
+      "last_verified_at": "2026-08-19T17:08:14.805Z"
+    },
+    {
+      "id": "fp_usr_1787159294804_b1y7p_2",
+      "user_id": "usr_1787159294804_b1y7p",
+      "finger_index": 2,
+      "finger_name": "Left Thumb",
+      "biometric_template": "BIO_SHA256_PRIYA_LT",
+      "scan_quality": 96,
+      "enrolled_at": "2026-08-19T17:08:14.805Z",
+      "last_verified_at": "2026-08-19T17:08:14.805Z"
+    },
+    {
+      "id": "fp_usr_1787159294804_b1y7p_3",
+      "user_id": "usr_1787159294804_b1y7p",
+      "finger_index": 3,
+      "finger_name": "Left Index",
+      "biometric_template": "BIO_SHA256_PRIYA_LI",
+      "scan_quality": 99,
+      "enrolled_at": "2026-08-19T17:08:14.805Z",
+      "last_verified_at": "2026-08-19T17:08:14.805Z"
+    }
+  ],
+  "user_applications": [
+    {
+      "id": "PMKISAN2026MR24",
+      "user_id": "usr_1787159294804_b1y7p",
+      "scheme_id": "pm-kisan",
+      "scheme_name": "PM-KISAN Samman Nidhi",
+      "submitted_date": "19 Aug 2026",
+      "status": "Under Review",
+      "current_step": 3,
+      "steps_json": "[{\"title\":\"Application Submitted\",\"status\":\"Completed\",\"date\":\"19 Aug 2026\"},{\"title\":\"Documents Verified\",\"status\":\"Completed\",\"date\":\"19 Aug 2026\"},{\"title\":\"Under Review\",\"status\":\"In Progress\",\"date\":\"Since 19 Aug 2026\"},{\"title\":\"Approved\",\"status\":\"Pending\"},{\"title\":\"Benefits Disbursed\",\"status\":\"Pending\"}]",
+      "created_at": "2026-08-19T17:08:15.469Z"
+    }
+  ],
+  "user_documents": [
+    {
+      "id": "doc_usr_1787158556604_fofgj_1",
+      "user_id": "usr_1787158556604_fofgj",
+      "name": "Aadhaar Card",
+      "type": "Identity",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "XXXX XXXX 3210"
+    },
+    {
+      "id": "doc_usr_1787158556604_fofgj_2",
+      "user_id": "usr_1787158556604_fofgj",
+      "name": "Bank Account (Jan Dhan)",
+      "type": "Financial",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "SBI - *******3210"
+    },
+    {
+      "id": "doc_usr_1787158556604_fofgj_3",
+      "user_id": "usr_1787158556604_fofgj",
+      "name": "Ration Card (NFSA)",
+      "type": "Income",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "RC-KA-556896"
+    },
+    {
+      "id": "doc_usr_1787158556604_fofgj_4",
+      "user_id": "usr_1787158556604_fofgj",
+      "name": "Land Records (Pahani/RTC)",
+      "type": "Property",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "RTC-KA-2026-6896"
+    },
+    {
+      "id": "doc_usr_1787159294804_b1y7p_1",
+      "user_id": "usr_1787159294804_b1y7p",
+      "name": "Aadhaar Card",
+      "type": "Identity",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "XXXX XXXX 6655"
+    },
+    {
+      "id": "doc_usr_1787159294804_b1y7p_2",
+      "user_id": "usr_1787159294804_b1y7p",
+      "name": "Bank Account (Jan Dhan)",
+      "type": "Financial",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "SBI - *******6655"
+    },
+    {
+      "id": "doc_usr_1787159294804_b1y7p_3",
+      "user_id": "usr_1787159294804_b1y7p",
+      "name": "Ration Card (NFSA)",
+      "type": "Income",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "RC-KA-295054"
+    },
+    {
+      "id": "doc_usr_1787159294804_b1y7p_4",
+      "user_id": "usr_1787159294804_b1y7p",
+      "name": "Land Records (Pahani/RTC)",
+      "type": "Property",
+      "status": "Verified",
+      "source": "DigiLocker",
+      "doc_number": "RTC-KA-2026-5055"
+    }
+  ]
+}

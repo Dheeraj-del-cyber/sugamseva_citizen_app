@@ -3,7 +3,41 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  cleanPhone?: string;
   avatar: string;
+  createdAt?: string;
+  updatedAt?: string;
+  fingerprintsCount?: number;
+}
+
+export interface FingerprintRecord {
+  id: string;
+  userId?: string;
+  fingerIndex: number; // 0: Right Thumb, 1: Right Index, 2: Left Thumb, 3: Left Index
+  fingerName: string;
+  scanQuality: number;
+  enrolledAt: string;
+  lastVerifiedAt?: string;
+  templateHash?: string;
+}
+
+export interface FingerprintEnrollmentData {
+  fingerIndex: number;
+  fingerName: string;
+  fingerLabelKey?: string;
+  biometricTemplate?: string;
+  scanQuality?: number;
+  isScanned: boolean;
+  scannedAt?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message?: string;
+  token?: string;
+  user?: User;
+  fingerprints?: FingerprintRecord[];
+  error?: string;
 }
 
 export type SchemeCategory = 

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
+import { useAuth } from '../context/AuthContext';
 import { AppLanguage } from '../types';
 
 export const AppHeader = () => {
-  const { t, activeLanguage, setLanguage, popScreen, screenStack } = useAppNavigation();
+  const { t, activeLanguage, setLanguage, popScreen, screenStack, setTab } = useAppNavigation();
+  const { user } = useAuth();
   const [langDropdownVisible, setLangDropdownVisible] = useState(false);
 
   const canGoBack = screenStack.length > 1;
@@ -17,7 +19,7 @@ export const AppHeader = () => {
     { code: 'hi', label: 'हिन्दी (HI)' }
   ];
 
-  const currentLanguageLabel = languages.find(l => l.code === activeLanguage)?.label || 'English';
+  const defaultAvatar = `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(user?.name || 'Citizen')}&backgroundColor=047857`;
 
   return (
     <View style={styles.headerContainer}>
@@ -27,8 +29,8 @@ export const AppHeader = () => {
             <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.iconButton} accessibilityLabel="Open menu">
-            <Ionicons name="menu" size={24} color={COLORS.primary} />
+          <TouchableOpacity onPress={() => setTab('Home')} style={styles.iconButton} accessibilityLabel="Home">
+            <Ionicons name="home-outline" size={22} color={COLORS.primary} />
           </TouchableOpacity>
         )}
 
@@ -44,16 +46,29 @@ export const AppHeader = () => {
       </View>
 
       <View style={styles.rightSection}>
+        {/* Language selector */}
         <TouchableOpacity
           onPress={() => setLangDropdownVisible(true)}
           style={styles.langSelector}
           accessibilityLabel="Change Language"
         >
-          <Ionicons name="language" size={16} color={COLORS.primary} />
+          <Ionicons name="language" size={15} color={COLORS.primary} />
           <Text style={styles.langText}>
             {activeLanguage === 'en' ? 'EN' : activeLanguage === 'kn' ? 'KN' : 'HI'}
           </Text>
           <Ionicons name="chevron-down" size={12} color={COLORS.primary} />
+        </TouchableOpacity>
+
+        {/* Citizen Profile Avatar Shortcut */}
+        <TouchableOpacity
+          onPress={() => setTab('Profile')}
+          style={styles.avatarButton}
+          accessibilityLabel="My Profile"
+        >
+          <Image
+            source={{ uri: user?.avatar || defaultAvatar }}
+            style={styles.headerAvatar}
+          />
         </TouchableOpacity>
       </View>
 
@@ -125,8 +140,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconButton: {
-    padding: 8,
-    marginRight: 8,
+    padding: 6,
+    marginRight: 6,
     borderRadius: 20,
   },
   logoAndText: {
@@ -160,16 +175,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.lightBorder,
+    marginRight: 8,
   },
   langText: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.primary,
     marginHorizontal: 4,
+  },
+  avatarButton: {
+    padding: 2,
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: '#065F46',
   },
   modalOverlay: {
     flex: 1,
