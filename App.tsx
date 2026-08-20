@@ -12,6 +12,8 @@ import ApplicationScreen from './src/screens/ApplicationScreen';
 import TrackApplicationScreen from './src/screens/TrackApplicationScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import DigiLockerScreen from './src/screens/DigiLockerScreen';
+import DocumentsScreen from './src/screens/DocumentsScreen';
+import DocumentCaptureScreen from './src/screens/DocumentCaptureScreen';
 import VoiceAssistantModal from './src/screens/VoiceAssistantModal';
 import AuthScreen from './src/screens/AuthScreen';
 import { COLORS } from './src/constants/colors';
@@ -51,6 +53,10 @@ function MainAppOrchestrator() {
         return <ProfileScreen />;
       case 'DigiLocker':
         return <DigiLockerScreen />;
+      case 'Documents':
+        return <DocumentsScreen />;
+      case 'DocumentCapture':
+        return <DocumentCaptureScreen />;
       default:
         return <HomeScreen />;
     }
