@@ -1,9 +1,54 @@
+import Constants from 'expo-constants';
 import { User, FingerprintRecord, Application, CitizenDocument, Scheme } from '../types';
 
-// Default API URL (can be customized for mobile / web)
-const API_BASE_URL = typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost'
-  ? `http://${window.location.hostname}:5000/api`
-  : 'http://localhost:5000/api';
+const API_PORT = 5000;
+
+// Resolve the backend URL for every environment this app can run in:
+//  - Web (browser): use the page's own hostname.
+//  - Expo Go / dev client on a phone or emulator: `localhost` refers to the PHONE
+//    itself, not your computer, so we instead read the LAN IP that Expo's dev
+//    server is already using to talk to this device (hostUri, e.g. "192.168.1.42:8081")
+//    and reuse that same IP for the API. This means no manual IP editing is needed -
+//    it just works as long as the backend is running on your computer on the same
+//    network and `npm run dev`/`expo start` was used to launch the app.
+//  - Fallback: localhost (works for iOS simulator, and as a last resort).
+const resolveApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+    // Running as a website (web build / Expo web).
+    return `http://${window.location.hostname}:${API_PORT}/api`;
+  }
+
+  // Android emulator: 10.0.2.2 is the special alias for the host machine's localhost.
+  const { Platform } = require('react-native');
+  if (Platform.OS === 'android' && !Constants.isDevice) {
+    return `http://10.0.2.2:${API_PORT}/api`;
+  }
+
+  // Physical device / other emulator via Expo Go or dev client: derive the host
+  // machine's LAN IP from the URI Expo used to load this app's JS bundle.
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).expoGoConfig?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
+    (Constants as any).manifest?.debuggerHost;
+
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    if (host) {
+      return `http://${host}:${API_PORT}/api`;
+    }
+  }
+
+  // Last resort - only correct for an iOS simulator running alongside the backend.
+  return `http://localhost:${API_PORT}/api`;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+if (typeof __DEV__ !== 'undefined' && __DEV__) {
+  // eslint-disable-next-line no-console
+  console.log(`[API] Using backend URL: ${API_BASE_URL}`);
+}
 
 // In-memory token & user persistence
 let authToken: string | null = null;
