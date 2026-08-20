@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { db, initDb } = require('./db');
+const { translateBatch, SUPPORTED_LANGUAGES } = require('./translate');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -176,6 +178,48 @@ app.get('/api/health', (req, res) => {
       registeredUsers: db.users.all().length
     }
   });
+});
+
+// ==========================================
+// TRANSLATION ROUTES
+// ==========================================
+
+/**
+ * GET /api/languages
+ * Returns the list of languages the app can be translated into.
+ */
+app.get('/api/languages', (req, res) => {
+  res.json({
+    success: true,
+    languages: SUPPORTED_LANGUAGES
+  });
+});
+
+/**
+ * POST /api/translate
+ * Body: { texts: string[], targetLang: string }
+ * Translates a batch of English source strings into targetLang.
+ * Results are cached on disk (server/data/translations_cache.json) so
+ * repeat requests for the same text/language pair never re-hit the
+ * translation API.
+ */
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { texts, targetLang } = req.body;
+
+    if (!Array.isArray(texts) || texts.length === 0) {
+      return res.status(400).json({ error: '"texts" must be a non-empty array of strings' });
+    }
+    if (!targetLang || typeof targetLang !== 'string') {
+      return res.status(400).json({ error: '"targetLang" is required' });
+    }
+
+    const translations = await translateBatch(texts, targetLang);
+    res.json({ success: true, targetLang, translations });
+  } catch (error) {
+    console.error('[Translate] Error:', error.message);
+    res.status(500).json({ error: error.message || 'Translation failed' });
+  }
 });
 
 // ==========================================
