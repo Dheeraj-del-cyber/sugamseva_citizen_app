@@ -219,13 +219,12 @@ export const api = {
     return await request('/documents');
   },
 
-  // Languages available for translation
+  // Translation: list of languages the app can be translated into
   getLanguages: async (): Promise<{ success: boolean; languages: { code: string; name: string; nativeName: string }[] }> => {
     return await request('/languages');
   },
 
-  // Translate a batch of English source strings into targetLang.
-  // Server caches results, so repeat calls for the same strings/language are free.
+  // Translation: translate a batch of English source strings into targetLang
   translateBatch: async (texts: string[], targetLang: string): Promise<{ success: boolean; targetLang: string; translations: string[] }> => {
     return await request('/translate', {
       method: 'POST',

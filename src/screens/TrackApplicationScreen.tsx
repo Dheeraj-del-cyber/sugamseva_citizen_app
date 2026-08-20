@@ -25,8 +25,8 @@ export const TrackApplicationScreen = () => {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="document-text-outline" size={48} color={COLORS.textMuted} />
-        <Text style={styles.emptyTitle}>No applications yet</Text>
-        <Text style={styles.emptySub}>Apply to a scheme from the Discover tab to start tracking it here.</Text>
+        <Text style={styles.emptyTitle}>{t('noApplicationsYet')}</Text>
+        <Text style={styles.emptySub}>{t('noApplicationsDesc')}</Text>
       </View>
     );
   }

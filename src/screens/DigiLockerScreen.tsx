@@ -24,22 +24,21 @@ export const DigiLockerScreen = () => {
           <View style={styles.logoBadge}>
             <Ionicons name="lock-closed" size={20} color={COLORS.white} />
           </View>
-          <Text style={styles.logoText}>DigiLocker-style Records</Text>
+          <Text style={styles.logoText}>{t('digiLockerRecords')}</Text>
         </View>
         <Text style={styles.headerDesc}>
-          This prototype lists the documents on file for your citizen account. A production
-          version would connect to the real DigiLocker API rather than this app's own database.
+          {t('digiLockerDesc')}
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Documents on File</Text>
+      <Text style={styles.sectionTitle}>{t('documentsOnFile')}</Text>
 
       {isLoadingDocuments ? (
         <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
       ) : documents.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="folder-open-outline" size={40} color={COLORS.textMuted} />
-          <Text style={styles.emptyText}>No documents on file yet.</Text>
+          <Text style={styles.emptyText}>{t('noDocumentsYet')}</Text>
         </View>
       ) : (
         documents.map((doc) => (

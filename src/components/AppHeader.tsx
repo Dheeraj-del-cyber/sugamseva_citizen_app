@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useAuth } from '../context/AuthContext';
-import { AppLanguage } from '../types';
 
 export const AppHeader = () => {
-  const { t, activeLanguage, setLanguage, popScreen, screenStack, setTab } = useAppNavigation();
+  const { t, activeLanguage, setLanguage, availableLanguages, isTranslating, popScreen, screenStack, setTab } = useAppNavigation();
   const { user } = useAuth();
   const [langDropdownVisible, setLangDropdownVisible] = useState(false);
 
   const canGoBack = screenStack.length > 1;
 
-  const languages: { code: AppLanguage; label: string }[] = [
-    { code: 'en', label: 'English' },
-    { code: 'kn', label: 'ಕನ್ನಡ (KN)' },
-    { code: 'hi', label: 'हिन्दी (HI)' }
-  ];
+  const activeLangLabel = availableLanguages.find((l) => l.code === activeLanguage)?.code.toUpperCase() || activeLanguage.toUpperCase();
 
   const defaultAvatar = `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(user?.name || 'Citizen')}&backgroundColor=047857`;
 
@@ -52,10 +47,12 @@ export const AppHeader = () => {
           style={styles.langSelector}
           accessibilityLabel="Change Language"
         >
-          <Ionicons name="language" size={15} color={COLORS.primary} />
-          <Text style={styles.langText}>
-            {activeLanguage === 'en' ? 'EN' : activeLanguage === 'kn' ? 'KN' : 'HI'}
-          </Text>
+          {isTranslating ? (
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginHorizontal: 4 }} />
+          ) : (
+            <Ionicons name="language" size={15} color={COLORS.primary} />
+          )}
+          <Text style={styles.langText}>{activeLangLabel}</Text>
           <Ionicons name="chevron-down" size={12} color={COLORS.primary} />
         </TouchableOpacity>
 
@@ -85,32 +82,34 @@ export const AppHeader = () => {
           onPress={() => setLangDropdownVisible(false)}
         >
           <View style={styles.dropdownMenu}>
-            <Text style={styles.dropdownHeader}>Select Language / ಭಾಷೆ / भाषा</Text>
-            {languages.map((lang) => (
-              <TouchableOpacity
-                key={lang.code}
-                style={[
-                  styles.dropdownItem,
-                  activeLanguage === lang.code && styles.dropdownItemActive
-                ]}
-                onPress={() => {
-                  setLanguage(lang.code);
-                  setLangDropdownVisible(false);
-                }}
-              >
-                <Text
+            <Text style={styles.dropdownHeader}>{t('selectLanguage')}</Text>
+            <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+              {availableLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
                   style={[
-                    styles.dropdownItemText,
-                    activeLanguage === lang.code && styles.dropdownItemTextActive
+                    styles.dropdownItem,
+                    activeLanguage === lang.code && styles.dropdownItemActive
                   ]}
+                  onPress={() => {
+                    setLanguage(lang.code);
+                    setLangDropdownVisible(false);
+                  }}
                 >
-                  {lang.label}
-                </Text>
-                {activeLanguage === lang.code && (
-                  <Ionicons name="checkmark" size={18} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      activeLanguage === lang.code && styles.dropdownItemTextActive
+                    ]}
+                  >
+                    {lang.nativeName} {lang.nativeName !== lang.name ? `(${lang.name})` : ''}
+                  </Text>
+                  {activeLanguage === lang.code && (
+                    <Ionicons name="checkmark" size={18} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -206,6 +205,7 @@ const styles = StyleSheet.create({
   },
   dropdownMenu: {
     width: 280,
+    maxHeight: 420,
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
@@ -214,6 +214,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
+  },
+  dropdownScroll: {
+    maxHeight: 340,
   },
   dropdownHeader: {
     fontSize: 14,

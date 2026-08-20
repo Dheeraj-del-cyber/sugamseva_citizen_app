@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { BiometricScannerModal } from '../components/BiometricScannerModal';
 
 export const AuthScreen: React.FC = () => {
-  const { t, activeLanguage, setLanguage } = useAppNavigation();
+  const { t, activeLanguage, setLanguage, availableLanguages } = useAppNavigation();
   const {
     signIn,
     signUp,
@@ -74,7 +74,7 @@ export const AuthScreen: React.FC = () => {
 
   const handleSignInSubmit = async () => {
     if (!signInPhone.trim() || !signInPassword.trim()) {
-      Alert.alert("Missing Fields", t('pleaseCompleteForm'));
+      Alert.alert(t('missingFields'), t('pleaseCompleteForm'));
       return;
     }
     await signIn(signInPhone, signInPassword);
@@ -82,7 +82,7 @@ export const AuthScreen: React.FC = () => {
 
   const handleBiometricSignIn = async () => {
     if (!signInPhone.trim()) {
-      Alert.alert("Phone Required", "Please enter your registered mobile number first.");
+      Alert.alert(t('phoneRequired'), t('phoneRequiredMessage'));
       return;
     }
     setScannerPurpose('signin');
@@ -102,24 +102,24 @@ export const AuthScreen: React.FC = () => {
       setScannerVisible(false);
       setShowEnrollOffer(false);
       if (!res.success) {
-        Alert.alert('Could not enable fingerprint sign-in', res.error || 'Please try again from your profile later.');
+        Alert.alert(t('couldNotEnableBiometric'), res.error || t('tryAgainLater'));
       }
     }
   };
 
   const handleSignUpSubmit = async () => {
     if (!signUpName.trim() || !signUpPhone.trim() || !signUpPassword.trim() || !signUpConfirmPassword.trim()) {
-      Alert.alert("Missing Fields", t('pleaseCompleteForm'));
+      Alert.alert(t('missingFields'), t('pleaseCompleteForm'));
       return;
     }
 
     if (signUpPassword !== signUpConfirmPassword) {
-      Alert.alert("Password Error", t('passwordsDoNotMatch'));
+      Alert.alert(t('passwordError'), t('passwordsDoNotMatch'));
       return;
     }
 
     if (signUpPassword.length < 6) {
-      Alert.alert("Password Error", t('passwordTooShort'));
+      Alert.alert(t('passwordError'), t('passwordTooShort'));
       return;
     }
 
@@ -152,27 +152,27 @@ export const AuthScreen: React.FC = () => {
         </View>
 
         {/* Language Selector */}
-        <View style={styles.langPills}>
-          {(['en', 'kn', 'hi'] as const).map(lang => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.langPills} contentContainerStyle={styles.langPillsContent}>
+          {availableLanguages.map(lang => (
             <TouchableOpacity
-              key={lang}
-              onPress={() => setLanguage(lang)}
+              key={lang.code}
+              onPress={() => setLanguage(lang.code)}
               style={[
                 styles.langPill,
-                activeLanguage === lang && styles.langPillActive
+                activeLanguage === lang.code && styles.langPillActive
               ]}
             >
               <Text
                 style={[
                   styles.langPillText,
-                  activeLanguage === lang && styles.langPillTextActive
+                  activeLanguage === lang.code && styles.langPillTextActive
                 ]}
               >
-                {lang === 'en' ? 'EN' : lang === 'kn' ? 'KN' : 'HI'}
+                {lang.code.toUpperCase()}
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -448,9 +448,9 @@ export const AuthScreen: React.FC = () => {
             <View style={styles.enrollIconWrap}>
               <MaterialCommunityIcons name="fingerprint" size={48} color={COLORS.primary} />
             </View>
-            <Text style={[styles.formHeaderTitle, { textAlign: 'center' }]}>Enable Fingerprint Sign-In?</Text>
+            <Text style={[styles.formHeaderTitle, { textAlign: 'center' }]}>{t('enableFingerprintTitle')}</Text>
             <Text style={[styles.formHeaderSubtitle, { textAlign: 'center' }]}>
-              Account created. Next time, unlock Sugam Seva instantly using your phone's own fingerprint or Face ID sensor - the same one that unlocks your phone. We never see or store the fingerprint itself.
+              {t('enrollOfferSubtitle')}
             </Text>
 
             <TouchableOpacity
@@ -459,11 +459,11 @@ export const AuthScreen: React.FC = () => {
               activeOpacity={0.8}
             >
               <Ionicons name="finger-print" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
-              <Text style={styles.submitButtonText}>Enable Fingerprint Sign-In</Text>
+              <Text style={styles.submitButtonText}>{t('enableFingerprintBtn')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setShowEnrollOffer(false)} style={styles.switchTabBtn}>
-              <Text style={styles.switchTabText}>Maybe later</Text>
+              <Text style={styles.switchTabText}>{t('maybeLater')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -525,15 +525,19 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   langPills: {
-    flexDirection: 'row',
+    maxWidth: 170,
     backgroundColor: '#F1F5F9',
     borderRadius: 20,
+  },
+  langPillsContent: {
+    flexDirection: 'row',
     padding: 3,
   },
   langPill: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 14,
+    marginRight: 2,
   },
   langPillActive: {
     backgroundColor: COLORS.primary,

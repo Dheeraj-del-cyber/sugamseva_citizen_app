@@ -11,6 +11,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { runOsBiometricPrompt, checkBiometricHardware } from '../services/biometrics';
+import { useAppNavigation } from '../navigation/NavigationContext';
 
 interface BiometricScannerModalProps {
   visible: boolean;
@@ -33,6 +34,7 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
   onClose,
   onResult,
 }) => {
+  const { t } = useAppNavigation();
   const [state, setState] = useState<'idle' | 'checking' | 'waiting_os' | 'success' | 'error'>('idle');
   const [errorText, setErrorText] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -65,7 +67,7 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
     const hw = await checkBiometricHardware();
     if (!hw.available) {
       setState('error');
-      setErrorText(hw.reason || 'Fingerprint/Face ID is not available on this device.');
+      setErrorText(hw.reason || t('fingerprintNotAvailable'));
       return;
     }
 
@@ -77,7 +79,7 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
       onResult({ success: true });
     } else {
       setState('error');
-      setErrorText(result.error || 'Fingerprint / Face ID did not match.');
+      setErrorText(result.error || t('fingerprintDidNotMatch'));
       onResult({ success: false, error: result.error });
     }
   };
@@ -88,7 +90,7 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
         <View style={styles.modalContent}>
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>
-              {purpose === 'enroll' ? 'Enable Fingerprint Sign-In' : 'Fingerprint Sign-In'}
+              {purpose === 'enroll' ? t('enableFingerprintSignIn') : t('fingerprintSignInTitle')}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={COLORS.textDark} />
@@ -96,12 +98,11 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
           </View>
 
           <Text style={styles.instructionText}>
-            {state === 'idle' &&
-              "This uses your phone's own fingerprint or Face ID sensor. We never see or store your actual fingerprint - only your phone's operating system does that."}
-            {state === 'checking' && 'Checking this device...'}
-            {state === 'waiting_os' && 'Follow the prompt from your phone to scan your fingerprint or face.'}
-            {state === 'success' && 'Verified by your device.'}
-            {state === 'error' && (errorText || 'Something went wrong.')}
+            {state === 'idle' && t('biometricIdleInstruction')}
+            {state === 'checking' && t('checkingDevice')}
+            {state === 'waiting_os' && t('followDevicePrompt')}
+            {state === 'success' && t('verifiedByDevice')}
+            {state === 'error' && (errorText || t('somethingWentWrong'))}
           </Text>
 
           <View style={styles.sensorContainer}>
@@ -124,19 +125,19 @@ export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
               <TouchableOpacity onPress={start} style={styles.primaryModalBtn} activeOpacity={0.8}>
                 <Ionicons name="finger-print" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
                 <Text style={styles.primaryModalBtnText}>
-                  {state === 'error' ? 'Try Again' : 'Use Device Fingerprint / Face ID'}
+                  {state === 'error' ? t('tryAgain') : t('useDeviceFingerprint')}
                 </Text>
               </TouchableOpacity>
             )}
             {(state === 'checking' || state === 'waiting_os') && (
               <View style={styles.scanningStatusBtn}>
-                <Text style={styles.scanningStatusText}>Waiting for your device...</Text>
+                <Text style={styles.scanningStatusText}>{t('waitingForDevice')}</Text>
               </View>
             )}
             {state === 'success' && (
               <TouchableOpacity onPress={onClose} style={styles.primaryModalBtn} activeOpacity={0.8}>
                 <Ionicons name="checkmark-done" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
-                <Text style={styles.primaryModalBtnText}>Done</Text>
+                <Text style={styles.primaryModalBtnText}>{t('done')}</Text>
               </TouchableOpacity>
             )}
           </View>

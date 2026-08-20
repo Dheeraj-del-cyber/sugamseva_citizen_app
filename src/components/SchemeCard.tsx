@@ -43,7 +43,7 @@ export const SchemeCard = ({ scheme, onPressDetails }: SchemeCardProps) => {
 
       <View style={styles.footerRow}>
         <View style={styles.benefitContainer}>
-          <Text style={styles.benefitLabel}>Benefits:</Text>
+          <Text style={styles.benefitLabel}>{t('benefitsColon')}</Text>
           <Text style={styles.benefitValue}>{scheme.benefits}</Text>
         </View>
         <TouchableOpacity

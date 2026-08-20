@@ -16,10 +16,10 @@ export const ApplicationScreen = () => {
   const scheme = schemes.find((s) => s.id === schemeId) || schemes[0];
 
   const steps = [
-    { title: 'Personal Details', status: 'Completed' as const },
-    { title: 'Documents', status: 'Completed' as const },
-    { title: 'Eligibility Check', status: 'Completed' as const },
-    { title: 'Review & Submit', status: 'In Progress' as const },
+    { title: t('stepPersonalDetails'), status: 'Completed' as const },
+    { title: t('stepDocuments'), status: 'Completed' as const },
+    { title: t('stepEligibilityCheck'), status: 'Completed' as const },
+    { title: t('stepReviewSubmit'), status: 'In Progress' as const },
   ];
 
   const handleReview = async () => {
@@ -30,12 +30,12 @@ export const ApplicationScreen = () => {
 
     if (result) {
       Alert.alert(
-        "Application Submitted",
-        `Your application (${result.id}) has been submitted and is under review.`,
-        [{ text: "Track Application", onPress: () => setTab('Track') }]
+        t('applicationSubmittedTitle'),
+        t('applicationSubmittedMessage', { id: result.id }),
+        [{ text: t('trackApplicationCta'), onPress: () => setTab('Track') }]
       );
     } else {
-      Alert.alert("Submission Failed", "We couldn't submit your application. Please check your connection and try again.");
+      Alert.alert(t('submissionFailedTitle'), t('submissionFailedMessage'));
     }
   };
 

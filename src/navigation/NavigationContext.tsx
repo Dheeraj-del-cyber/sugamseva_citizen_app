@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { AppLanguage, LanguageOption } from '../types';
-import { translations, TranslationKey } from '../translations/translations';
-import { api } from '../services/api';
+import { TranslationKey } from '../translations/translations';
+import { EN_DICT, getUiDictionary, getAvailableLanguages, FALLBACK_LANGUAGES } from '../services/translation';
 
 export type ScreenName = 
   | 'Home' 
@@ -11,9 +11,7 @@ export type ScreenName =
   | 'Track' 
   | 'Profile'
   | 'DigiLocker'
-  | 'Auth'
-  | 'Documents'
-  | 'DocumentCapture';
+  | 'Auth';
 
 interface ScreenState {
   name: ScreenName;
@@ -22,57 +20,26 @@ interface ScreenState {
 
 export type TabName = 'Home' | 'Schemes' | 'AI' | 'Track' | 'Profile';
 
-// Fallback list used if the backend's /api/languages can't be reached (e.g.
-// offline dev). Keeps the language picker usable; actual translation of
-// any language not pre-baked below still requires the API to be reachable.
-const FALLBACK_LANGUAGES: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
-  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
-  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
-  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
-  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી' },
-  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
-  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
-  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ' },
-  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া' },
-  { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
-];
+const LANGUAGE_STORAGE_KEY = 'sugamseva_active_language';
 
-// Languages we already ship hand-crafted (higher quality, zero-latency,
-// works offline) translations for. Anything else is translated live via
-// the backend's /api/translate (Google Cloud Translation API) and cached.
-const STATIC_LANGUAGES = Object.keys(translations) as AppLanguage[];
-
-// Flatten translations.en (including the nested `categories` object) into
-// a single {key: englishText} map, once, at module load. This is the
-// source list of strings we ask the API to translate for any dynamic
-// (non-pre-baked) language.
-const flattenEnglish = (): { keys: string[]; texts: string[] } => {
-  const keys: string[] = [];
-  const texts: string[] = [];
-  Object.entries(translations.en).forEach(([k, v]) => {
-    if (typeof v === 'string') {
-      keys.push(k);
-      texts.push(v);
-    } else if (v && typeof v === 'object') {
-      Object.entries(v as Record<string, string>).forEach(([ck, cv]) => {
-        keys.push(`categories.${ck}`);
-        texts.push(cv);
-      });
-    }
-  });
-  return { keys, texts };
+const loadSavedLanguage = (): AppLanguage | null => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  }
+  return null;
 };
-const { keys: BASE_KEYS, texts: BASE_TEXTS } = flattenEnglish();
+
+const persistLanguage = (lang: AppLanguage) => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+  }
+};
 
 interface NavigationContextType {
   activeLanguage: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
-  languages: LanguageOption[];
-  translationsLoading: boolean;
+  availableLanguages: LanguageOption[];
+  isTranslating: boolean;
   currentTab: TabName;
   setTab: (tab: TabName) => void;
   screenStack: ScreenState[];
@@ -80,7 +47,7 @@ interface NavigationContextType {
   popScreen: () => void;
   resetNavigation: (screenName?: ScreenName) => void;
   currentScreen: ScreenState;
-  t: (key: TranslationKey, params?: Record<string, string>) => string;
+  t: (key: TranslationKey | string, params?: Record<string, string>) => string;
   tCategory: (categoryName: string) => string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -93,17 +60,16 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider = ({ children }: { children: ReactNode }) => {
-  const [activeLanguage, setLanguageState] = useState<AppLanguage>('en');
-  const [languages, setLanguages] = useState<LanguageOption[]>(FALLBACK_LANGUAGES);
+  const [activeLanguage, setLanguageState] = useState<AppLanguage>(() => loadSavedLanguage() || 'en');
+  const [availableLanguages, setAvailableLanguages] = useState<LanguageOption[]>(FALLBACK_LANGUAGES);
+  // The live dictionary of translated UI text for activeLanguage. Starts as
+  // English and is swapped out once the batch translation for a language
+  // resolves - this way the UI never blocks, it just updates in place.
+  const [uiDict, setUiDict] = useState<Record<string, string>>(EN_DICT);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   const [currentTab, setTabState] = useState<TabName>('Home');
   const [screenStack, setScreenStack] = useState<ScreenState[]>([{ name: 'Home' }]);
-
-  // Cache of API-translated strings, keyed by language code, then by the
-  // same flattened key used in translations.en (e.g. "greeting",
-  // "categories.Agriculture"). Populated lazily the first time a language
-  // is selected; reused afterward for the lifetime of the app session.
-  const [dynamicTranslations, setDynamicTranslations] = useState<Record<string, Record<string, string>>>({});
-  const [translationsLoading, setTranslationsLoading] = useState(false);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,44 +78,40 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
   // Voice Assistant Visibility
   const [voiceAssistantVisible, setVoiceAssistantVisible] = useState(false);
 
-  // Load the full list of supported languages from the backend once.
+  // Load the full list of translatable languages from the backend once, so
+  // the language picker always reflects every language the server supports
+  // (currently 13) without needing a client-side hardcoded list.
   useEffect(() => {
-    api.getLanguages()
-      .then((res) => {
-        if (res.success && res.languages?.length) {
-          setLanguages(res.languages);
-        }
-      })
-      .catch(() => {
-        // Backend unreachable - keep the fallback list so the picker still works.
-      });
+    getAvailableLanguages().then(setAvailableLanguages);
   }, []);
 
-  const ensureLanguageTranslated = async (lang: AppLanguage) => {
-    if (lang === 'en' || STATIC_LANGUAGES.includes(lang) || dynamicTranslations[lang]) {
-      return; // already have it, no API call needed
+  // Whenever the active language changes, (re)load its full UI dictionary.
+  // English resolves instantly since it IS the source dictionary; every
+  // other language is translated in one batched call the first time it's
+  // used and served from cache after that.
+  useEffect(() => {
+    let cancelled = false;
+    if (activeLanguage === 'en') {
+      setUiDict(EN_DICT);
+      setIsTranslating(false);
+      return;
     }
-    setTranslationsLoading(true);
-    try {
-      const { translations: translatedTexts } = await api.translateBatch(BASE_TEXTS, lang);
-      const map: Record<string, string> = {};
-      BASE_KEYS.forEach((key, i) => {
-        map[key] = translatedTexts[i];
-      });
-      setDynamicTranslations((prev) => ({ ...prev, [lang]: map }));
-    } catch (error: any) {
-      console.warn(`[Translation] Could not translate to "${lang}", falling back to English:`, error.message);
-      // Cache an empty map so t() falls back to English instead of retrying every render.
-      setDynamicTranslations((prev) => ({ ...prev, [lang]: {} }));
-    } finally {
-      setTranslationsLoading(false);
-    }
-  };
+    setIsTranslating(true);
+    getUiDictionary(activeLanguage).then((dict) => {
+      if (!cancelled) {
+        setUiDict(dict);
+        setIsTranslating(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage]);
 
-  const setLanguage = (lang: AppLanguage) => {
+  const setLanguage = useCallback((lang: AppLanguage) => {
     setLanguageState(lang);
-    ensureLanguageTranslated(lang);
-  };
+    persistLanguage(lang);
+  }, []);
 
   const setTab = (tab: TabName) => {
     if (tab === 'AI') {
@@ -187,44 +149,27 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
 
   const currentScreen = screenStack[screenStack.length - 1] || { name: 'Home' };
 
-  // Translation helper with parameter interpolation.
-  // Resolution order: hand-crafted static translation (en/kn/hi) -> live
-  // API-translated cache for the active language -> English fallback.
-  const t = (key: TranslationKey, params?: Record<string, string>): string => {
-    let text: string | undefined;
-
-    if (STATIC_LANGUAGES.includes(activeLanguage)) {
-      const translationSet = translations[activeLanguage as keyof typeof translations];
-      const val = (translationSet as any)[key];
-      if (typeof val === 'string') text = val;
-    } else {
-      text = dynamicTranslations[activeLanguage]?.[key as string];
-    }
-
-    if (typeof text !== 'string') {
-      text = (translations.en[key] as string) || String(key);
-    }
+  // Translation helper with parameter interpolation. Reads from the live,
+  // dynamically-translated dictionary for the active language, falling back
+  // to English (and finally the raw key) if a string is momentarily missing.
+  const t = (key: TranslationKey | string, params?: Record<string, string>): string => {
+    let text = uiDict[key as string] ?? EN_DICT[key as string] ?? String(key);
 
     if (params) {
       Object.keys(params).forEach(paramKey => {
-        text = (text as string).replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
+        text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
       });
     }
 
-    return text as string;
+    return text;
   };
 
+  // Category names come from the fixed SchemeCategory enum, so they live in
+  // the same dynamically-translated dictionary under "categories.<Name>".
   const tCategory = (categoryName: string): string => {
-    const defaultCatMap = translations.en.categories as Record<string, string>;
-
-    if (STATIC_LANGUAGES.includes(activeLanguage)) {
-      const translationSet = translations[activeLanguage as keyof typeof translations];
-      const catMap = translationSet.categories as Record<string, string>;
-      return catMap[categoryName] || defaultCatMap[categoryName] || categoryName;
-    }
-
-    const dynamicVal = dynamicTranslations[activeLanguage]?.[`categories.${categoryName}`];
-    return dynamicVal || defaultCatMap[categoryName] || categoryName;
+    const flatKey = `categories.${categoryName}`;
+    if (EN_DICT[flatKey] === undefined) return categoryName; // unknown category, nothing to translate
+    return uiDict[flatKey] ?? EN_DICT[flatKey];
   };
 
   return (
@@ -232,8 +177,8 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
       value={{
         activeLanguage,
         setLanguage,
-        languages,
-        translationsLoading,
+        availableLanguages,
+        isTranslating,
         currentTab,
         setTab,
         screenStack,

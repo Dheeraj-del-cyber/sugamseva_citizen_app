@@ -9,8 +9,7 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator,
-  FlatList
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -19,8 +18,8 @@ import { useAuth } from '../context/AuthContext';
 import { BiometricScannerModal } from '../components/BiometricScannerModal';
 
 export const ProfileScreen = () => {
-  const { t, activeLanguage, setLanguage, languages, translationsLoading, pushScreen, setTab, resetNavigation } = useAppNavigation();
-  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const { t, activeLanguage, setLanguage, availableLanguages, pushScreen, setTab, resetNavigation } = useAppNavigation();
+  const [langModalVisible, setLangModalVisible] = useState(false);
   const {
     user,
     fingerprints,
@@ -43,18 +42,18 @@ export const ProfileScreen = () => {
   const handleToggleBiometric = () => {
     if (biometricEnabledOnThisDevice) {
       Alert.alert(
-        'Turn off fingerprint sign-in?',
-        "You'll only be able to sign in with your password on this device.",
+        t('turnOffBiometricTitle'),
+        t('turnOffBiometricDesc'),
         [
           { text: t('cancel'), style: 'cancel' },
-          { text: 'Turn Off', style: 'destructive', onPress: () => disableBiometricSignIn() },
+          { text: t('turnOff'), style: 'destructive', onPress: () => disableBiometricSignIn() },
         ]
       );
       return;
     }
 
     if (!biometricAvailableOnThisDevice) {
-      Alert.alert('Not Available', 'This device has no fingerprint sensor or Face ID enrolled in its Settings yet.');
+      Alert.alert(t('notAvailable'), t('noBiometricHardware'));
       return;
     }
 
@@ -66,7 +65,7 @@ export const ProfileScreen = () => {
       const res = await enableBiometricSignIn();
       setBiometricScannerVisible(false);
       if (!res.success) {
-        Alert.alert('Could not enable fingerprint sign-in', res.error || 'Please try again.');
+        Alert.alert(t('couldNotEnableBiometric'), res.error || t('pleaseTryAgain'));
       }
     } else {
       setBiometricScannerVisible(false);
@@ -93,7 +92,7 @@ export const ProfileScreen = () => {
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      Alert.alert("Name Required", "Please enter a valid name.");
+      Alert.alert(t('nameRequired'), t('nameRequiredMessage'));
       return;
     }
 
@@ -106,14 +105,13 @@ export const ProfileScreen = () => {
 
     if (success) {
       setEditModalVisible(false);
-      Alert.alert("Success", t('profileUpdated'));
+      Alert.alert(t('success'), t('profileUpdated'));
     }
   };
 
   const getLanguageName = () => {
-    const lang = languages.find((l) => l.code === activeLanguage);
-    if (!lang) return activeLanguage;
-    return lang.code === 'en' ? lang.name : `${lang.nativeName} (${lang.name})`;
+    const lang = availableLanguages.find((l) => l.code === activeLanguage);
+    return lang ? lang.nativeName : 'English';
   };
 
   const menuOptions = [
@@ -121,12 +119,13 @@ export const ProfileScreen = () => {
       icon: 'language-outline',
       label: t('languageOpt'),
       rightText: getLanguageName(),
-      onPress: () => setLanguageModalVisible(true)
+      onPress: () => setLangModalVisible(true)
     },
     {
       icon: 'folder-open-outline',
       label: t('myDocuments'),
-      onPress: () => pushScreen('Documents')
+      rightText: t('digiLocker'),
+      onPress: () => pushScreen('DigiLocker')
     },
     {
       icon: 'document-text-outline',
@@ -136,22 +135,22 @@ export const ProfileScreen = () => {
     {
       icon: 'notifications-outline',
       label: t('myAlerts'),
-      onPress: () => Alert.alert("My Alerts", "You have no new alerts.")
+      onPress: () => Alert.alert(t('myAlerts'), t('myAlertsEmpty'))
     },
     {
       icon: 'help-circle-outline',
       label: t('helpSupport'),
-      onPress: () => Alert.alert("Help & Support", "Support desk is available 24/7. Call 1800-11-2026")
+      onPress: () => Alert.alert(t('helpSupport'), t('helpSupportDesc'))
     },
     {
       icon: 'settings-outline',
       label: t('settings'),
-      onPress: () => Alert.alert("Settings", "App preferences.")
+      onPress: () => Alert.alert(t('settings'), t('appPreferences'))
     },
     {
       icon: 'information-circle-outline',
       label: t('aboutSugam'),
-      onPress: () => Alert.alert("About", "Sugam Seva Citizen App v1.0.0. Secured by Aadhaar Biometric Registry.")
+      onPress: () => Alert.alert(t('about'), t('aboutAppDesc'))
     }
   ];
 
@@ -207,17 +206,17 @@ export const ProfileScreen = () => {
           </View>
           <View style={styles.bioInfoText}>
             <View style={styles.bioTitleRow}>
-              <Text style={styles.bioCardTitle}>Fingerprint / Face ID Sign-In</Text>
+              <Text style={styles.bioCardTitle}>{t('biometricSignInCardTitle')}</Text>
               <View style={[styles.bioActiveBadge, !biometricEnabledOnThisDevice && styles.bioInactiveBadge]}>
                 <Text style={[styles.bioActiveText, !biometricEnabledOnThisDevice && styles.bioInactiveText]}>
-                  {biometricEnabledOnThisDevice ? 'On for this device' : 'Off for this device'}
+                  {biometricEnabledOnThisDevice ? t('onForDevice') : t('offForDevice')}
                 </Text>
               </View>
             </View>
             <Text style={styles.bioCardSub}>
               {fingerprints.length > 0
-                ? `${fingerprints.length} device${fingerprints.length > 1 ? 's' : ''} enrolled`
-                : 'Uses your phone\'s own sensor - we never store the print itself'}
+                ? t('devicesEnrolled', { count: String(fingerprints.length) })
+                : t('biometricSensorHint')}
             </Text>
           </View>
           <Ionicons
@@ -232,7 +231,7 @@ export const ProfileScreen = () => {
             <View style={styles.bioDivider} />
 
             {fingerprints.length === 0 ? (
-              <Text style={styles.bioEmptyText}>No devices have fingerprint sign-in enabled yet.</Text>
+              <Text style={styles.bioEmptyText}>{t('noBiometricDevices')}</Text>
             ) : (
               fingerprints.map((fp) => (
                 <View key={fp.id} style={styles.fingerprintRow}>
@@ -243,7 +242,7 @@ export const ProfileScreen = () => {
                     <View>
                       <Text style={styles.fpName}>{fp.deviceName}</Text>
                       <Text style={styles.fpMeta}>
-                        Last used {fp.lastVerifiedAt ? new Date(fp.lastVerifiedAt).toLocaleDateString() : '—'}
+                        {t('lastUsed', { date: fp.lastVerifiedAt ? new Date(fp.lastVerifiedAt).toLocaleDateString() : '—' })}
                       </Text>
                     </View>
                   </View>
@@ -264,7 +263,7 @@ export const ProfileScreen = () => {
                 color={biometricEnabledOnThisDevice ? '#DC2626' : COLORS.white}
               />
               <Text style={[styles.bioToggleBtnText, biometricEnabledOnThisDevice && styles.bioToggleBtnTextOff]}>
-                {biometricEnabledOnThisDevice ? 'Turn Off on This Device' : 'Enable on This Device'}
+                {biometricEnabledOnThisDevice ? t('turnOffOnDevice') : t('enableOnDevice')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -274,7 +273,7 @@ export const ProfileScreen = () => {
       <BiometricScannerModal
         visible={biometricScannerVisible}
         purpose="enroll"
-        promptMessage="Confirm your fingerprint to enable fingerprint sign-in"
+        promptMessage={t('confirmFingerprintPrompt')}
         onClose={() => setBiometricScannerVisible(false)}
         onResult={handleBiometricEnrollResult}
       />
@@ -340,12 +339,12 @@ export const ProfileScreen = () => {
                   style={styles.modalInput}
                   value={editName}
                   onChangeText={setEditName}
-                  placeholder="Legal Name"
+                  placeholder={t('fullNamePlaceholder')}
                 />
               </View>
 
               <View style={styles.modalInputGroup}>
-                <Text style={styles.modalInputLabel}>Email Address</Text>
+                <Text style={styles.modalInputLabel}>{t('emailAddress')}</Text>
                 <TextInput
                   style={styles.modalInput}
                   value={editEmail}
@@ -363,7 +362,7 @@ export const ProfileScreen = () => {
                   value={user?.phone || ''}
                   editable={false}
                 />
-                <Text style={styles.modalHelperText}>Mobile number linked to Aadhaar cannot be modified</Text>
+                <Text style={styles.modalHelperText}>{t('mobileLinkedNote')}</Text>
               </View>
             </View>
 
@@ -391,58 +390,43 @@ export const ProfileScreen = () => {
         </View>
       </Modal>
 
-      {/* Language Picker Modal */}
+      {/* Language Selection Modal */}
       <Modal
-        visible={languageModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setLanguageModalVisible(false)}
+        visible={langModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setLangModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, styles.languageModalCard]}>
+          <View style={styles.langModalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('languageOpt')}</Text>
-              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+              <Text style={styles.modalTitle}>{t('selectLanguage')}</Text>
+              <TouchableOpacity onPress={() => setLangModalVisible(false)}>
                 <Ionicons name="close" size={22} color={COLORS.textDark} />
               </TouchableOpacity>
             </View>
-
-            <FlatList
-              data={languages}
-              keyExtractor={(item) => item.code}
-              style={styles.languageList}
-              renderItem={({ item }) => {
-                const isActive = item.code === activeLanguage;
-                return (
-                  <TouchableOpacity
-                    style={[styles.languageRow, isActive && styles.languageRowActive]}
-                    onPress={() => {
-                      setLanguage(item.code);
-                      setLanguageModalVisible(false);
-                    }}
-                  >
-                    <View>
-                      <Text style={[styles.languageNative, isActive && styles.languageTextActive]}>
-                        {item.nativeName}
-                      </Text>
-                      <Text style={[styles.languageEnglish, isActive && styles.languageTextActive]}>
-                        {item.name}
-                      </Text>
-                    </View>
-                    {isActive && (
-                      <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
-                    )}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-
-            {translationsLoading && (
-              <View style={styles.languageLoadingRow}>
-                <ActivityIndicator color={COLORS.primary} />
-                <Text style={styles.languageLoadingText}>Translating…</Text>
-              </View>
-            )}
+            <ScrollView style={styles.langModalScroll} showsVerticalScrollIndicator={false}>
+              {availableLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[
+                    styles.langModalRow,
+                    activeLanguage === lang.code && styles.langModalRowActive
+                  ]}
+                  onPress={() => {
+                    setLanguage(lang.code);
+                    setLangModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.langModalRowText, activeLanguage === lang.code && styles.langModalRowTextActive]}>
+                    {lang.nativeName} {lang.nativeName !== lang.name ? `(${lang.name})` : ''}
+                  </Text>
+                  {activeLanguage === lang.code && (
+                    <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -750,6 +734,37 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
   },
+  langModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    maxHeight: '75%',
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 20,
+  },
+  langModalScroll: {
+    marginTop: 4,
+  },
+  langModalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  langModalRowActive: {
+    backgroundColor: '#ECFDF5',
+  },
+  langModalRowText: {
+    fontSize: 15,
+    color: COLORS.textDark,
+  },
+  langModalRowTextActive: {
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -763,48 +778,6 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     marginBottom: 20,
-  },
-  languageModalCard: {
-    maxHeight: '75%',
-  },
-  languageList: {
-    maxHeight: 380,
-  },
-  languageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 6,
-  },
-  languageRowActive: {
-    backgroundColor: COLORS.primaryLight,
-  },
-  languageNative: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textDark,
-  },
-  languageEnglish: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  languageTextActive: {
-    color: COLORS.primary,
-  },
-  languageLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 12,
-    gap: 8,
-  },
-  languageLoadingText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
   },
   modalInputGroup: {
     marginBottom: 14,

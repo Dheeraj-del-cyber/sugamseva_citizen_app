@@ -112,7 +112,7 @@ export const DiscoverSchemesScreen = () => {
         </Text>
         {selectedCategory && (
           <TouchableOpacity onPress={() => setSelectedCategory(null)}>
-            <Text style={styles.clearFilterText}>Clear</Text>
+            <Text style={styles.clearFilterText}>{t('clear')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -122,7 +122,7 @@ export const DiscoverSchemesScreen = () => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={COLORS.textMuted} />
-          <Text style={styles.emptyText}>No schemes match your query.</Text>
+          <Text style={styles.emptyText}>{t('noSchemesMatch')}</Text>
         </View>
       )}
 

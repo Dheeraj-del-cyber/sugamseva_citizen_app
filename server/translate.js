@@ -261,14 +261,31 @@ const translateBatch = async (texts, targetLang) => {
     const CHUNK_SIZE = 40;
     for (let start = 0; start < missTexts.length; start += CHUNK_SIZE) {
       const chunk = missTexts.slice(start, start + CHUNK_SIZE);
-      const translatedChunk = await callBhashiniTranslate(chunk, targetLang);
-      translatedChunk.forEach((translated, j) => {
-        const globalIdx = missIndexes[start + j];
-        results[globalIdx] = translated;
-        langCache[hashText(texts[globalIdx])] = translated;
-      });
+      try {
+        const translatedChunk = await callBhashiniTranslate(chunk, targetLang);
+        translatedChunk.forEach((translated, j) => {
+          const globalIdx = missIndexes[start + j];
+          results[globalIdx] = translated;
+          langCache[hashText(texts[globalIdx])] = translated;
+        });
+      } catch (err) {
+        // Don't let one failed chunk (rate limit, transient network error,
+        // missing credentials, etc.) throw away translations that already
+        // succeeded for earlier chunks in this same batch. Fall back to the
+        // original English text for just this chunk's entries - the caller
+        // still gets a fully-shaped, same-length response and will retry
+        // these specific strings (they're intentionally left out of the
+        // cache) next time this language is requested.
+        console.error(`[Translate] Chunk translation to "${targetLang}" failed, falling back to source text for this chunk:`, err.message);
+        chunk.forEach((text, j) => {
+          const globalIdx = missIndexes[start + j];
+          results[globalIdx] = text;
+        });
+      }
+      // Persist after every chunk (not just at the end) so progress survives
+      // a crash/restart even if a later chunk in this same batch fails.
+      persistCache();
     }
-    persistCache();
   }
 
   return results;

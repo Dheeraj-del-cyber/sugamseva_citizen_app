@@ -77,13 +77,13 @@ export interface CitizenDocument {
   docNumber?: string;
 }
 
-// Language is now an open ISO 639-1 code (e.g. 'en', 'hi', 'ta', 'te', ...)
-// resolved dynamically against whatever the backend's /api/languages
-// endpoint reports as supported, rather than a fixed hardcoded union.
+// Any ISO-639 code the backend's /api/languages list returns is a valid app
+// language - the list itself (13 major Indian languages + English) lives on
+// the server in server/translate.js so it can grow without a client release.
 export type AppLanguage = string;
 
 export interface LanguageOption {
-  code: AppLanguage;
+  code: string;
   name: string;
   nativeName: string;
 }

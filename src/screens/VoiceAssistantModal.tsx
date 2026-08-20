@@ -19,6 +19,7 @@ export const VoiceAssistantModal = () => {
   const { voiceAssistantVisible, setVoiceAssistantVisible, t, pushScreen, setSelectedCategory } = useAppNavigation();
   const [inputText, setInputText] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [responseIntent, setResponseIntent] = useState<'eligible' | 'agriculture' | 'financial' | 'generic' | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [micActive, setMicActive] = useState(true);
 
@@ -35,9 +36,12 @@ export const VoiceAssistantModal = () => {
     return () => clearInterval(interval);
   }, [micActive, voiceAssistantVisible]);
 
-  const handleSuggestQuery = (query: string) => {
+  // Suggestion chips carry a language-independent intent id alongside their
+  // (translated) display text, so tapping one always resolves to the right
+  // canned response no matter which of the 13 languages is active.
+  const handleSuggestQuery = (query: string, intent: 'eligible' | 'agriculture' | 'financial') => {
     setInputText(query);
-    processQuery(query);
+    processQuery(query, intent);
   };
 
   const handleSubmitText = () => {
@@ -45,24 +49,39 @@ export const VoiceAssistantModal = () => {
     processQuery(inputText);
   };
 
-  const processQuery = (queryText: string) => {
+  const processQuery = (queryText: string, intent?: 'eligible' | 'agriculture' | 'financial') => {
     setMicActive(false);
     setIsProcessing(true);
     setAiResponse(null);
+    setResponseIntent(null);
 
     // Mock processing response delay
     setTimeout(() => {
       setIsProcessing(false);
+      // Free-typed queries are matched against English keywords, which only
+      // works reliably when the person types in English - for anything that
+      // doesn't match (including non-English free text) we fall back to the
+      // generic response, which echoes their own query back to them.
       const query = queryText.toLowerCase();
+      const resolvedIntent: 'eligible' | 'agriculture' | 'financial' | 'generic' =
+        intent ||
+        (query.includes('eligible') || query.includes('what schemes')
+          ? 'eligible'
+          : query.includes('agriculture') || query.includes('farmer')
+          ? 'agriculture'
+          : query.includes('financial') || query.includes('money') || query.includes('assistance')
+          ? 'financial'
+          : 'generic');
 
-      if (query.includes('eligible') || query.includes('what schemes')) {
-        setAiResponse("Based on your Aadhaar and Land Records, you are highly eligible for 'PM-KISAN Samman Nidhi' and the 'Post-Matric Scholarship'. Tap 'View Details' on PM-KISAN to check benefits.");
-      } else if (query.includes('agriculture') || query.includes('farmer')) {
-        setAiResponse("I have filtered schemes for Agriculture. PM-KISAN is available for you. Tap to explore.");
-      } else if (query.includes('financial') || query.includes('money') || query.includes('assistance')) {
-        setAiResponse("Under PM-KISAN, you receive ₹6,000 per year. For education, Post-Matric covers full tuition fee waiver. Let me redirect you to the discover schemes list.");
+      setResponseIntent(resolvedIntent);
+      if (resolvedIntent === 'eligible') {
+        setAiResponse(t('aiEligibleResponse'));
+      } else if (resolvedIntent === 'agriculture') {
+        setAiResponse(t('aiAgricultureResponse'));
+      } else if (resolvedIntent === 'financial') {
+        setAiResponse(t('aiFinancialResponse'));
       } else {
-        setAiResponse(`I found some schemes related to your query: "${queryText}". You can browse all Agriculture or Pension schemes by tapping the corresponding categories.`);
+        setAiResponse(t('aiGenericResponse', { query: queryText }));
       }
     }, 1500);
   };
@@ -74,23 +93,25 @@ export const VoiceAssistantModal = () => {
     setAiResponse(null);
     setMicActive(true);
 
-    if (aiResponse && aiResponse.includes('PM-KISAN')) {
+    if (responseIntent === 'eligible' || responseIntent === 'agriculture') {
       pushScreen('Details', { schemeId: 'pm-kisan' });
     } else {
       pushScreen('Discover');
     }
+    setResponseIntent(null);
   };
 
   const handleResetMic = () => {
     setMicActive(true);
     setAiResponse(null);
+    setResponseIntent(null);
     setInputText('');
   };
 
-  const suggestions = [
-    t('q1'),
-    t('q2'),
-    t('q3')
+  const suggestions: { id: 'eligible' | 'agriculture' | 'financial'; text: string }[] = [
+    { id: 'eligible', text: t('q1') },
+    { id: 'financial', text: t('q2') },
+    { id: 'agriculture', text: t('q3') }
   ];
 
   return (
@@ -134,7 +155,7 @@ export const VoiceAssistantModal = () => {
               {isProcessing && (
                 <View style={styles.processingBlock}>
                   <ActivityIndicator size="large" color={COLORS.primary} />
-                  <Text style={styles.processingText}>Analyzing query...</Text>
+                  <Text style={styles.processingText}>{t('analyzingQuery')}</Text>
                 </View>
               )}
 
@@ -146,7 +167,7 @@ export const VoiceAssistantModal = () => {
                   <View style={styles.bubble}>
                     <Text style={styles.responseText}>{aiResponse}</Text>
                     <TouchableOpacity onPress={handleAction} style={styles.bubbleActionBtn}>
-                      <Text style={styles.bubbleActionText}>View related scheme</Text>
+                      <Text style={styles.bubbleActionText}>{t('viewRelatedScheme')}</Text>
                       <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
@@ -160,7 +181,7 @@ export const VoiceAssistantModal = () => {
                 <View style={[styles.pulseRing, pulseCount >= 1 && styles.pulseActive1]} />
                 <View style={[styles.pulseRing, pulseCount >= 2 && styles.pulseActive2]} />
                 <View style={[styles.pulseRing, pulseCount >= 3 && styles.pulseActive3]} />
-                <TouchableOpacity style={styles.micCircleBig} onPress={() => processQuery("Tell me what schemes I am eligible for")}>
+                <TouchableOpacity style={styles.micCircleBig} onPress={() => processQuery(t('q1'), 'eligible')}>
                   <Ionicons name="mic" size={40} color={COLORS.white} />
                 </TouchableOpacity>
               </View>
@@ -169,7 +190,7 @@ export const VoiceAssistantModal = () => {
             {!micActive && !isProcessing && (
               <TouchableOpacity onPress={handleResetMic} style={styles.resetMicBtn}>
                 <Ionicons name="mic-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.resetMicText}>Tap to speak again</Text>
+                <Text style={styles.resetMicText}>{t('tapToSpeakAgain')}</Text>
               </TouchableOpacity>
             )}
 
@@ -177,13 +198,13 @@ export const VoiceAssistantModal = () => {
             <View style={styles.suggestionsContainer}>
               <Text style={styles.sectionLabel}>{t('suggestedQueries')}</Text>
               <View style={styles.chipRow}>
-                {suggestions.map((query, idx) => (
+                {suggestions.map((query) => (
                   <TouchableOpacity
-                    key={idx}
-                    onPress={() => handleSuggestQuery(query)}
+                    key={query.id}
+                    onPress={() => handleSuggestQuery(query.text, query.id)}
                     style={styles.chip}
                   >
-                    <Text style={styles.chipText}>{query}</Text>
+                    <Text style={styles.chipText}>{query.text}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

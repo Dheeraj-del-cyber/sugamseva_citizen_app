@@ -16,7 +16,7 @@ export const SchemeDetailsScreen = () => {
   if (!scheme) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: COLORS.textMuted }}>Loading scheme details...</Text>
+        <Text style={{ color: COLORS.textMuted }}>{t('loadingSchemeDetails')}</Text>
       </View>
     );
   }
@@ -57,7 +57,7 @@ export const SchemeDetailsScreen = () => {
 
       {/* Benefits Card */}
       <View style={styles.benefitsCard}>
-        <Text style={styles.benefitsLabel}>Total Benefits</Text>
+        <Text style={styles.benefitsLabel}>{t('totalBenefits')}</Text>
         <Text style={styles.benefitsValue}>{scheme.benefits}</Text>
         {scheme.benefitsDetail && (
           <Text style={styles.benefitsDetail}>{scheme.benefitsDetail}</Text>
@@ -80,7 +80,7 @@ export const SchemeDetailsScreen = () => {
       {/* Section: What you'll need */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>{t('whatNeeded')}</Text>
-        <Text style={styles.sectionSub}>Required verified documents:</Text>
+        <Text style={styles.sectionSub}>{t('requiredDocsLabel')}</Text>
         <View style={styles.docChipRow}>
           {scheme.requiredDocuments.map((doc, idx) => (
             <View key={idx} style={styles.docChip}>
