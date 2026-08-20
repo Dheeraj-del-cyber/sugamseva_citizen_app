@@ -18,14 +18,9 @@ const resolveApiBaseUrl = (): string => {
     return `http://${window.location.hostname}:${API_PORT}/api`;
   }
 
-  // Android emulator: 10.0.2.2 is the special alias for the host machine's localhost.
-  const { Platform } = require('react-native');
-  if (Platform.OS === 'android' && !Constants.isDevice) {
-    return `http://10.0.2.2:${API_PORT}/api`;
-  }
-
-  // Physical device / other emulator via Expo Go or dev client: derive the host
-  // machine's LAN IP from the URI Expo used to load this app's JS bundle.
+  // On any native platform, first try to derive the host machine's LAN IP from
+  // the URI that Expo used to deliver this app's JS bundle. This works for both
+  // physical devices AND emulators that can reach the host over the LAN.
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).expoGoConfig?.debuggerHost ||
@@ -34,12 +29,18 @@ const resolveApiBaseUrl = (): string => {
 
   if (hostUri) {
     const host = hostUri.split(':')[0];
-    if (host) {
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
       return `http://${host}:${API_PORT}/api`;
     }
   }
 
-  // Last resort - only correct for an iOS simulator running alongside the backend.
+  // Fallback for Android emulator: 10.0.2.2 maps to the host machine's localhost.
+  const { Platform } = require('react-native');
+  if (Platform.OS === 'android') {
+    return `http://10.0.2.2:${API_PORT}/api`;
+  }
+
+  // Last resort for iOS simulator.
   return `http://localhost:${API_PORT}/api`;
 };
 

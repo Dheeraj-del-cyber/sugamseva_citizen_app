@@ -23,7 +23,6 @@ export const AuthScreen: React.FC = () => {
     signIn,
     signUp,
     signInWithBiometrics,
-    enableBiometricSignIn,
     checkDeviceHasBiometricEnabled,
     isLoading,
     authError,
@@ -46,11 +45,9 @@ export const AuthScreen: React.FC = () => {
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
-  // Real biometric prompt modal state
+  // Biometric sign-in prompt modal state
   const [scannerVisible, setScannerVisible] = useState(false);
-  const [scannerPurpose, setScannerPurpose] = useState<'enroll' | 'signin'>('signin');
-  // Shown right after a fresh sign-up, offering to turn on fingerprint sign-in
-  const [showEnrollOffer, setShowEnrollOffer] = useState(false);
+  const [scannerPurpose] = useState<'enroll' | 'signin'>('signin');
 
   const handleTabChange = (mode: 'signin' | 'signup') => {
     clearError();
@@ -85,26 +82,13 @@ export const AuthScreen: React.FC = () => {
       Alert.alert(t('phoneRequired'), t('phoneRequiredMessage'));
       return;
     }
-    setScannerPurpose('signin');
     setScannerVisible(true);
   };
 
   const handleScannerResult = async (result: { success: boolean; error?: string }) => {
     if (!result.success) return;
-
-    if (scannerPurpose === 'signin') {
-      await signInWithBiometrics(signInPhone);
-      setScannerVisible(false);
-    } else {
-      // enroll: the OS already confirmed the real fingerprint/Face ID; now register
-      // this device with the server.
-      const res = await enableBiometricSignIn();
-      setScannerVisible(false);
-      setShowEnrollOffer(false);
-      if (!res.success) {
-        Alert.alert(t('couldNotEnableBiometric'), res.error || t('tryAgainLater'));
-      }
-    }
+    await signInWithBiometrics(signInPhone);
+    setScannerVisible(false);
   };
 
   const handleSignUpSubmit = async () => {
@@ -123,15 +107,12 @@ export const AuthScreen: React.FC = () => {
       return;
     }
 
-    const ok = await signUp({
+    // signUp sets appPhase to 'post-auth-gate' on success — no extra action needed here
+    await signUp({
       name: signUpName.trim(),
       phone: signUpPhone.trim(),
       password: signUpPassword,
     });
-
-    if (ok && biometricAvailableOnThisDevice) {
-      setShowEnrollOffer(true);
-    }
   };
 
   return (
@@ -213,7 +194,7 @@ export const AuthScreen: React.FC = () => {
         {/* ================================================= */}
         {/* SIGN IN FORM */}
         {/* ================================================= */}
-        {authMode === 'signin' && !showEnrollOffer && (
+        {authMode === 'signin' && (
           <View style={styles.formCard}>
             <Text style={styles.formHeaderTitle}>{t('signInTitle')}</Text>
             <Text style={styles.formHeaderSubtitle}>{t('signInSubtitle')}</Text>
@@ -323,7 +304,7 @@ export const AuthScreen: React.FC = () => {
         {/* ================================================= */}
         {/* SIGN UP FORM */}
         {/* ================================================= */}
-        {authMode === 'signup' && !showEnrollOffer && (
+        {authMode === 'signup' && (
           <View style={styles.formCard}>
             <Text style={styles.formHeaderTitle}>{t('signUpTitle')}</Text>
             <Text style={styles.formHeaderSubtitle}>{t('signUpSubtitle')}</Text>
@@ -440,33 +421,7 @@ export const AuthScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ================================================= */}
-        {/* POST SIGN-UP: OFFER REAL BIOMETRIC ENROLLMENT      */}
-        {/* ================================================= */}
-        {showEnrollOffer && (
-          <View style={styles.formCard}>
-            <View style={styles.enrollIconWrap}>
-              <MaterialCommunityIcons name="fingerprint" size={48} color={COLORS.primary} />
-            </View>
-            <Text style={[styles.formHeaderTitle, { textAlign: 'center' }]}>{t('enableFingerprintTitle')}</Text>
-            <Text style={[styles.formHeaderSubtitle, { textAlign: 'center' }]}>
-              {t('enrollOfferSubtitle')}
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => { setScannerPurpose('enroll'); setScannerVisible(true); }}
-              style={styles.submitButton}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="finger-print" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
-              <Text style={styles.submitButtonText}>{t('enableFingerprintBtn')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setShowEnrollOffer(false)} style={styles.switchTabBtn}>
-              <Text style={styles.switchTabText}>{t('maybeLater')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Biometric enrollment is now handled in PostAuthGateScreen after sign-in */}
       </ScrollView>
 
       {/* Real OS Biometric Prompt */}
@@ -762,16 +717,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     lineHeight: 17,
-  },
-  enrollIconWrap: {
-    alignSelf: 'center',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
 });
 export default AuthScreen;

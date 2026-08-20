@@ -11,54 +11,28 @@ import SchemeDetailsScreen from './src/screens/SchemeDetailsScreen';
 import ApplicationScreen from './src/screens/ApplicationScreen';
 import TrackApplicationScreen from './src/screens/TrackApplicationScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import DigiLockerScreen from './src/screens/DigiLockerScreen';
 import DocumentsScreen from './src/screens/DocumentsScreen';
 import DocumentCaptureScreen from './src/screens/DocumentCaptureScreen';
 import VoiceAssistantModal from './src/screens/VoiceAssistantModal';
 import AuthScreen from './src/screens/AuthScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import { COLORS } from './src/constants/colors';
 
-function MainAppOrchestrator() {
+// ─── Main app router (used when appPhase === 'app') ──────────────────────────
+function MainApp() {
   const { currentScreen } = useAppNavigation();
-  const { isAuthenticated, isLoading } = useAuth();
 
-  // Show Loading Spinner during initial auth check
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
-  // If citizen is not signed in, show Sign In / Sign Up
-  if (!isAuthenticated) {
-    return <AuthScreen />;
-  }
-
-  // Render active screen based on navigation state
   const renderScreen = () => {
     switch (currentScreen.name) {
-      case 'Home':
-        return <HomeScreen />;
-      case 'Discover':
-        return <DiscoverSchemesScreen />;
-      case 'Details':
-        return <SchemeDetailsScreen />;
-      case 'Application':
-        return <ApplicationScreen />;
-      case 'Track':
-        return <TrackApplicationScreen />;
-      case 'Profile':
-        return <ProfileScreen />;
-      case 'DigiLocker':
-        return <DigiLockerScreen />;
-      case 'Documents':
-        return <DocumentsScreen />;
-      case 'DocumentCapture':
-        return <DocumentCaptureScreen />;
-      default:
-        return <HomeScreen />;
+      case 'Home':        return <HomeScreen />;
+      case 'Discover':    return <DiscoverSchemesScreen />;
+      case 'Details':     return <SchemeDetailsScreen />;
+      case 'Application': return <ApplicationScreen />;
+      case 'Track':       return <TrackApplicationScreen />;
+      case 'Profile':     return <ProfileScreen />;
+      case 'Documents':   return <DocumentsScreen />;
+      case 'DocumentCapture': return <DocumentCaptureScreen />;
+      default:            return <HomeScreen />;
     }
   };
 
@@ -75,12 +49,55 @@ function MainAppOrchestrator() {
   );
 }
 
+// ─── Onboarding router ────────────────────────────────────────────────────────
+// During onboarding, document capture is accessible via NavigationContext push,
+// so we need to handle it here before falling through to OnboardingScreen.
+function OnboardingRouter() {
+  const { currentScreen } = useAppNavigation();
+
+  if (currentScreen.name === 'DocumentCapture') {
+    return <DocumentCaptureScreen />;
+  }
+  return <OnboardingScreen />;
+}
+
+// ─── App orchestrator (reads appPhase from AuthContext) ───────────────────────
+function AppOrchestrator() {
+  const { appPhase } = useAuth();
+
+  switch (appPhase) {
+    case 'loading':
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
+
+    case 'auth':
+      return <AuthScreen />;
+
+    case 'onboarding':
+      return <OnboardingRouter />;
+
+    case 'app':
+      return <MainApp />;
+
+    default:
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
+  }
+}
+
+// ─── Root component ───────────────────────────────────────────────────────────
 export default function App() {
   return (
     <NavigationProvider>
       <AuthProvider>
         <DataProvider>
-          <MainAppOrchestrator />
+          <AppOrchestrator />
         </DataProvider>
       </AuthProvider>
     </NavigationProvider>

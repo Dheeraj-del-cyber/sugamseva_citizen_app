@@ -48,7 +48,7 @@
       "password_hash": "$2b$10$OABs/0AHbCS7TiHhiQWu4O0ujFmrtQWXXusMv7HgIPqQrAb.dXswG",
       "avatar": "https://api.dicebear.com/7.x/initials/png?seed=dheeraj&backgroundColor=047857",
       "created_at": "2026-08-20T10:37:05.718Z",
-      "updated_at": "2026-08-20T10:37:05.718Z"
+      "updated_at": "2026-08-20T11:25:22.360Z"
     }
   ],
   "fingerprints": [
@@ -195,6 +195,17 @@
       "current_step": 3,
       "steps_json": "[{\"title\":\"Application Submitted\",\"status\":\"Completed\",\"date\":\"20 Aug 2026\"},{\"title\":\"Documents Verified\",\"status\":\"Completed\",\"date\":\"20 Aug 2026\"},{\"title\":\"Under Review\",\"status\":\"In Progress\",\"date\":\"Since 20 Aug 2026\"},{\"title\":\"Approved\",\"status\":\"Pending\"},{\"title\":\"Benefits Disbursed\",\"status\":\"Pending\"}]",
       "created_at": "2026-08-20T10:47:36.577Z"
+    },
+    {
+      "id": "NPSPENSION2026AM5T",
+      "user_id": "usr_1787222225718_hu50u",
+      "scheme_id": "nps-pension",
+      "scheme_name": "National Pension Scheme (NPS)",
+      "submitted_date": "20 Aug 2026",
+      "status": "Under Review",
+      "current_step": 3,
+      "steps_json": "[{\"title\":\"Application Submitted\",\"status\":\"Completed\",\"date\":\"20 Aug 2026\"},{\"title\":\"Documents Verified\",\"status\":\"Completed\",\"date\":\"20 Aug 2026\"},{\"title\":\"Under Review\",\"status\":\"In Progress\",\"date\":\"Since 20 Aug 2026\"},{\"title\":\"Approved\",\"status\":\"Pending\"},{\"title\":\"Benefits Disbursed\",\"status\":\"Pending\"}]",
+      "created_at": "2026-08-20T11:10:27.489Z"
     }
   ],
   "user_documents": [
@@ -379,5 +390,15 @@
       "doc_number": "RTC-KA-2026-5866"
     }
   ],
-  "biometric_devices": []
+  "biometric_devices": [
+    {
+      "id": "bio_usr_1787222225718_hu50u_1787223893190",
+      "user_id": "usr_1787222225718_hu50u",
+      "device_id": "fb72de10-76ee-417e-a344-85bd493f31f3",
+      "device_name": "Android device",
+      "secret_hash": "$2b$10$DhUroZ1Xw5vk4E/unH4c3.28ea/YYdt96p9kk8ENSvDJUz1UpkijS",
+      "created_at": "2026-08-20T11:04:53.190Z",
+      "last_used_at": "2026-08-20T11:04:53.190Z"
+    }
+  ]
 }

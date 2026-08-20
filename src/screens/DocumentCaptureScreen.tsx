@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   cameraActions: {
-    backgroundColor: COLORS.black,
+    backgroundColor: '#000',
     padding: 24,
     paddingBottom: 40,
     alignItems: 'center',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     flex: 1,
-    backgroundColor: COLORS.black,
+    backgroundColor: '#000',
   },
   previewImage: {
     flex: 1,
