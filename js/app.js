@@ -12,6 +12,7 @@
         USER_DB:  'sugamSeva_userDB',   // { name, mobile, email, passwordHash }
         SESSION:  'sugamSeva_session',  // { name, mobile, email, id }
         DOCS:     'sugamSeva_docs',     // [ { id, type, dataUrl, addedAt } ]
+        APPLICATIONS: 'sugamSeva_applications',
     };
 
     // ============================================================
@@ -27,12 +28,15 @@
             capturedData: null,
         },
         pendingDocType: null,
+        currentView: 'documents',
+        selectedScheme: null,
+        language: 'en',
+        application: null,
+        schemes: [],
+        recommendationError: null,
     };
 
-    // ============================================================
-    //  Shorthand: t() — get translated string
-    // ============================================================
-    function t(key) { return window.I18n.t(key); }
+    const API_BASE = window.SUGAM_SEVA_API_BASE || '';
 
     // ============================================================
     //  DOM References
@@ -42,6 +46,9 @@
         authView:      id('auth-view'),
         bioView:       id('biometric-view'),
         dashView:      id('dashboard-view'),
+        homeView:      id('home-view'),
+        detailsView:   id('scheme-details-view'),
+        applicationView: id('application-view'),
 
         // Nav
         nav:           id('main-nav'),
@@ -62,6 +69,14 @@
         addDocBtn:     id('add-document-btn'),
         filterBar:     id('filter-bar'),
 
+        // Scheme and application views
+        schemeGrid:    id('scheme-grid'),
+        profileStrip:  id('profile-strip'),
+        languageSelect: id('language-select'),
+        schemeDetails: id('scheme-details-content'),
+        applicationContent: id('application-content'),
+        backHomeBtn:   id('back-home-btn'),
+
         // Upload Modal
         uploadModal:   id('upload-modal'),
         modalOverlay:  id('modal-overlay'),
@@ -77,9 +92,9 @@
         stepDigiLocker:  id('step-digilocker'),
 
         // Camera
-        cameraStream:    id('camera-stream'),
-        captureBtn:      id('capture-btn'),
-        captureCanvas:   id('capture-canvas'),
+        cameraStream:   id('camera-stream'),
+        captureBtn:     id('capture-btn'),
+        captureCanvas:  id('capture-canvas'),
         cancelCameraBtn: id('cancel-camera-btn'),
 
         // Preview
@@ -103,11 +118,6 @@
         viewModalTitle:   id('view-modal-title'),
         viewModalImg:     id('view-modal-img'),
         viewModalDate:    id('view-modal-date'),
-
-        // Language
-        langBtn:          id('lang-btn'),
-        langDropdown:     id('lang-dropdown'),
-        langCurrentLabel: id('lang-current-label'),
     };
 
     function id(s) { return document.getElementById(s); }
@@ -118,82 +128,10 @@
     document.addEventListener('DOMContentLoaded', boot);
 
     function boot() {
-        // Init i18n first — reads saved preference, sets html[lang] + dir
-        window.I18n.init(onLanguageChange);
-
         loadSession();
         loadDocuments();
         bindEvents();
-        renderLangSelector();
         route();
-    }
-
-    // ============================================================
-    //  Language change callback
-    // ============================================================
-    function onLanguageChange() {
-        // Re-apply all data-i18n attributes
-        window.I18n.applyTranslations();
-        // Update current lang label in button
-        renderLangCurrentLabel();
-        // Re-render any dynamically-built UI with translated strings
-        renderNav();
-        if (state.currentUser) renderDocumentGrid();
-        else renderAuthForm();
-    }
-
-    // ============================================================
-    //  Language Selector
-    // ============================================================
-    function renderLangSelector() {
-        const languages = window.I18n.getLanguages();
-        const current   = window.I18n.getCurrentLanguage();
-
-        el.langDropdown.innerHTML = languages.map(lang => `
-            <li role="option"
-                aria-selected="${lang.code === current}"
-                data-lang="${lang.code}"
-                class="lang-option${lang.code === current ? ' selected' : ''}${!lang.static ? ' needs-api' : ''}"
-                title="${!lang.static ? 'Requires Bhashini API configuration' : ''}">
-                <span class="lang-native">${escHtml(lang.label)}</span>
-                ${!lang.static ? '<span class="lang-api-badge">API</span>' : ''}
-            </li>
-        `).join('');
-
-        renderLangCurrentLabel();
-
-        // Events
-        el.langBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            const open = el.langDropdown.classList.toggle('open');
-            el.langBtn.setAttribute('aria-expanded', open);
-        });
-
-        el.langDropdown.addEventListener('click', e => {
-            const item = e.target.closest('[data-lang]');
-            if (!item) return;
-            const code = item.dataset.lang;
-            closeLangDropdown();
-            window.I18n.setLanguage(code).then(() => {
-                // Update selected state in list
-                el.langDropdown.querySelectorAll('.lang-option').forEach(li => {
-                    li.classList.toggle('selected', li.dataset.lang === window.I18n.getCurrentLanguage());
-                    li.setAttribute('aria-selected', li.dataset.lang === window.I18n.getCurrentLanguage());
-                });
-            });
-        });
-
-        document.addEventListener('click', () => closeLangDropdown());
-    }
-
-    function renderLangCurrentLabel() {
-        const current = window.I18n.getCurrentLanguage();
-        el.langCurrentLabel.textContent = current.toUpperCase();
-    }
-
-    function closeLangDropdown() {
-        el.langDropdown.classList.remove('open');
-        el.langBtn.setAttribute('aria-expanded', 'false');
     }
 
     // ============================================================
@@ -217,6 +155,25 @@
     function loadDocuments() {
         const raw = localStorage.getItem(KEYS.DOCS);
         state.documents = raw ? JSON.parse(raw) : [];
+    }
+
+    async function apiFetch(path, options = {}) {
+        const headers = { Accept: 'application/json', ...(options.headers || {}) };
+        if (state.currentUser) headers['X-User-Id'] = state.currentUser.id;
+        if (options.body) headers['Content-Type'] = 'application/json';
+        const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+        const body = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
+        if (!response.ok) throw new Error(body?.error || `Request failed (${response.status})`);
+        return body;
+    }
+
+    function syncProfile() {
+        if (!state.currentUser) return Promise.resolve();
+        return apiFetch('/api/profile', { method: 'PUT', body: JSON.stringify({ name: state.currentUser.name, mobile: state.currentUser.mobile, email: state.currentUser.email }) }).catch(() => {});
+    }
+
+    function syncDocumentMetadata() {
+        return Promise.all(state.documents.map(document => apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: document.id, documentType: document.type }) }).catch(() => {})));
     }
 
     function persistDocuments() {
@@ -243,17 +200,31 @@
             el.authView.style.display = 'block';
             renderAuthForm();
         } else {
-            el.dashView.classList.remove('hidden');
-            el.dashView.style.display = 'block';
-            renderDocumentGrid();
+            if (state.currentView === 'home') {
+                showView(el.homeView);
+                renderSchemeHome();
+            } else if (state.currentView === 'details' && state.selectedScheme) {
+                showView(el.detailsView);
+                renderSchemeDetails(findScheme(state.selectedScheme));
+            } else if (state.currentView === 'application' && state.selectedScheme) {
+                showView(el.applicationView);
+                renderApplicationForm(findScheme(state.selectedScheme));
+            } else {
+                state.currentView = 'documents';
+                showView(el.dashView);
+                renderDocumentGrid();
+            }
         }
         renderNav();
-        // Apply i18n to static DOM elements
-        window.I18n.applyTranslations();
+    }
+
+    function showView(view) {
+        view.classList.remove('hidden');
+        view.style.display = 'block';
     }
 
     function hideAllViews() {
-        [el.authView, el.bioView, el.dashView].forEach(v => {
+        [el.authView, el.bioView, el.dashView, el.homeView, el.detailsView, el.applicationView].forEach(v => {
             v.style.display = 'none';
             v.classList.add('hidden');
         });
@@ -265,9 +236,21 @@
     function renderNav() {
         if (state.currentUser) {
             el.nav.innerHTML = `
-                <span class="nav-user">${escHtml(t('navHi'))}, ${escHtml(state.currentUser.name)}</span>
-                <button id="logout-btn" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;">${escHtml(t('signOut'))}</button>
+                <span class="nav-user">Hi, ${escHtml(state.currentUser.name)}</span>
+                <button id="home-nav-btn" class="nav-link ${state.currentView === 'home' ? 'active' : ''}">Home</button>
+                <button id="documents-nav-btn" class="nav-link ${state.currentView === 'documents' ? 'active' : ''}">My Documents</button>
+                <button id="logout-btn" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;">Sign Out</button>
             `;
+            id('home-nav-btn').addEventListener('click', () => {
+                state.currentView = 'home';
+                state.selectedScheme = null;
+                route();
+            });
+            id('documents-nav-btn').addEventListener('click', () => {
+                state.currentView = 'documents';
+                state.selectedScheme = null;
+                route();
+            });
             id('logout-btn').addEventListener('click', handleLogout);
         } else {
             el.nav.innerHTML = '';
@@ -280,46 +263,46 @@
     function renderAuthForm() {
         clearFormError();
         if (state.isSignUpMode) {
-            el.authTitle.textContent     = t('createAccount');
-            el.authSubtitle.textContent  = t('createSubtitle');
-            el.toggleAuthBtn.textContent = t('haveAccount');
+            el.authTitle.textContent    = 'Create Account';
+            el.authSubtitle.textContent = 'Register to manage your citizen documents.';
+            el.toggleAuthBtn.textContent = 'Already have an account? Sign In';
             el.authForm.innerHTML = `
                 <div class="form-group">
-                    <label for="reg-name">${t('fullName')}</label>
-                    <input type="text" id="reg-name" class="form-control" placeholder="${t('fullNamePh')}" required autocomplete="name">
+                    <label for="reg-name">Full Name</label>
+                    <input type="text" id="reg-name" class="form-control" placeholder="Enter your full name" required autocomplete="name">
                 </div>
                 <div class="form-group">
-                    <label for="reg-mobile">${t('mobileNumber')}</label>
-                    <input type="tel" id="reg-mobile" class="form-control" placeholder="${t('mobilePh')}" required autocomplete="tel" maxlength="10">
+                    <label for="reg-mobile">Mobile Number</label>
+                    <input type="tel" id="reg-mobile" class="form-control" placeholder="10-digit mobile number" required autocomplete="tel" maxlength="10">
                 </div>
                 <div class="form-group">
-                    <label for="reg-email">${t('emailAddress')}</label>
-                    <input type="email" id="reg-email" class="form-control" placeholder="${t('emailPh')}" required autocomplete="email">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" class="form-control" placeholder="you@example.com" required autocomplete="email">
                 </div>
                 <div class="form-group">
-                    <label for="reg-pass">${t('newPassword')}</label>
-                    <input type="password" id="reg-pass" class="form-control" placeholder="${t('newPasswordPh')}" required autocomplete="new-password" minlength="8">
+                    <label for="reg-pass">Password</label>
+                    <input type="password" id="reg-pass" class="form-control" placeholder="Minimum 8 characters" required autocomplete="new-password" minlength="8">
                 </div>
                 <div class="form-group">
-                    <label for="reg-confirm">${t('confirmPassword')}</label>
-                    <input type="password" id="reg-confirm" class="form-control" placeholder="${t('confirmPasswordPh')}" required autocomplete="new-password">
+                    <label for="reg-confirm">Confirm Password</label>
+                    <input type="password" id="reg-confirm" class="form-control" placeholder="Repeat your password" required autocomplete="new-password">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-bottom:0;">${t('createAccountBtn')}</button>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-bottom:0;">Create Account</button>
             `;
         } else {
-            el.authTitle.textContent     = t('signInTitle');
-            el.authSubtitle.textContent  = t('signInSubtitle');
-            el.toggleAuthBtn.textContent = t('noAccount');
+            el.authTitle.textContent    = 'Sign In';
+            el.authSubtitle.textContent = 'Access your citizen documents securely.';
+            el.toggleAuthBtn.textContent = 'New here? Create an account';
             el.authForm.innerHTML = `
                 <div class="form-group">
-                    <label for="login-id">${t('mobileOrEmail')}</label>
-                    <input type="text" id="login-id" class="form-control" placeholder="${t('mobileOrEmailPh')}" required autocomplete="username">
+                    <label for="login-id">Mobile Number or Email</label>
+                    <input type="text" id="login-id" class="form-control" placeholder="Mobile or email" required autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label for="login-pass">${t('password')}</label>
-                    <input type="password" id="login-pass" class="form-control" placeholder="${t('passwordPh')}" required autocomplete="current-password">
+                    <label for="login-pass">Password</label>
+                    <input type="password" id="login-pass" class="form-control" placeholder="Your password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-bottom:0;">${t('signInBtn')}</button>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-bottom:0;">Sign In</button>
             `;
         }
     }
@@ -347,19 +330,19 @@
         const confirm = val('reg-confirm');
 
         if (!name || !mobile || !email || !pass || !confirm) {
-            return showFormError(t('errFillAll'));
+            return showFormError('Please fill in all fields.');
         }
         if (!/^[6-9]\d{9}$/.test(mobile)) {
-            return showFormError(t('errMobile'));
+            return showFormError('Please enter a valid 10-digit Indian mobile number.');
         }
         if (!/\S+@\S+\.\S+/.test(email)) {
-            return showFormError(t('errEmail'));
+            return showFormError('Please enter a valid email address.');
         }
         if (pass.length < 8) {
-            return showFormError(t('errPassLen'));
+            return showFormError('Password must be at least 8 characters.');
         }
         if (pass !== confirm) {
-            return showFormError(t('errPassMatch'));
+            return showFormError('Passwords do not match.');
         }
 
         const userRecord = { name, mobile, email, passwordHash: simpleHash(pass), id: Date.now().toString() };
@@ -374,12 +357,12 @@
         const pass    = val('login-pass');
 
         if (!loginId || !pass) {
-            return showFormError(t('errNoCredentials'));
+            return showFormError('Please enter your credentials.');
         }
 
         const raw = localStorage.getItem(KEYS.USER_DB);
         if (!raw) {
-            return showFormError(t('errNoAccount'));
+            return showFormError('No account found. Please create one first.');
         }
 
         const record = JSON.parse(raw);
@@ -387,7 +370,7 @@
                     && simpleHash(pass) === record.passwordHash;
 
         if (!match) {
-            return showFormError(t('errWrongCreds'));
+            return showFormError('Incorrect credentials. Please try again.');
         }
 
         pendingUser = { name: record.name, mobile: record.mobile, email: record.email, id: record.id };
@@ -401,21 +384,139 @@
         hideAllViews();
         el.bioView.classList.remove('hidden');
         el.bioView.style.display = 'block';
-        // Apply i18n to the static biometric view
-        window.I18n.applyTranslations();
     }
 
-    function finishAuth() {
+    async function finishAuth() {
         if (!pendingUser) return;
         saveSession(pendingUser);
         pendingUser = null;
+        await syncProfile();
+        await syncDocumentMetadata();
+        state.currentView = 'home';
         route();
     }
 
     function handleLogout() {
         clearSession();
         state.documents = [];
+        state.currentView = 'documents';
+        state.selectedScheme = null;
         route();
+    }
+
+    function getProfile() {
+        return {
+            name: state.currentUser ? state.currentUser.name : '',
+            mobile: state.currentUser ? state.currentUser.mobile : '',
+            email: state.currentUser ? state.currentUser.email : '',
+            documents: state.documents.map(doc => doc.type)
+        };
+    }
+
+    async function renderSchemeHome() {
+        try {
+            const result = await apiFetch('/api/recommendations');
+            state.schemes = result.recommendations.map(item => ({ ...item.scheme, assessment: item.assessment }));
+            state.recommendationError = null;
+        } catch (error) {
+            state.schemes = [];
+            state.recommendationError = error.message;
+        }
+        el.profileStrip.innerHTML = `
+            <div><span class="profile-label">Profile used</span><strong>${escHtml(getProfile().name)}</strong></div>
+            <div><span class="profile-label">Documents available</span><strong>${state.documents.length}</strong></div>
+            <div><span class="profile-label">Assessment</span><strong>May Be Eligible</strong></div>
+        `;
+        if (state.recommendationError) {
+            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><h3>Verified schemes are unavailable</h3><p>Connect the backend and import an approved myScheme dataset before showing recommendations.</p></div>`;
+            return;
+        }
+        if (!state.schemes.length) {
+            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><h3>No verified schemes available</h3><p>No approved scheme records have been imported yet.</p></div>`;
+            return;
+        }
+        el.schemeGrid.innerHTML = state.schemes.map(scheme => `
+            <article class="scheme-card">
+                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : 'Profile checked')}</span></div>
+                <h3>${escHtml(scheme.name)}</h3>
+                <p class="scheme-description">${escHtml(scheme.shortDescription)}</p>
+                <dl class="scheme-facts">
+                    <div><dt>Main benefit</dt><dd>${escHtml(scheme.benefits)}</dd></div>
+                    <div><dt>Basic eligibility</dt><dd>${escHtml(scheme.eligibilityHighlight)}</dd></div>
+                    <div><dt>Important documents</dt><dd>${escHtml(scheme.documents.map(document => document.name).join(', '))}</dd></div>
+                </dl>
+                <button type="button" class="btn btn-primary" data-scheme-details="${scheme.id}">View Details <span aria-hidden="true">&rarr;</span></button>
+            </article>
+        `).join('');
+    }
+
+    function findScheme(id) {
+        return state.schemes.find(scheme => scheme.id === id);
+    }
+
+    async function renderSchemeDetails(scheme) {
+        if (!scheme) {
+            try {
+                const result = await apiFetch(`/api/schemes/${encodeURIComponent(state.selectedScheme)}`);
+                scheme = result.scheme;
+                state.schemes.push(scheme);
+            } catch {
+                el.schemeDetails.innerHTML = '<div class="empty-state"><h3>Scheme details are unavailable</h3><p>Connect the backend to load verified information.</p></div>';
+                return;
+            }
+        }
+        el.schemeDetails.innerHTML = `
+            <div class="detail-heading"><div><span class="scheme-status">May Be Eligible</span><h2 id="scheme-details-title">${escHtml(scheme.name)}</h2><p>${escHtml(scheme.description)}</p></div><span class="official-mark">Official source listed</span></div>
+            <div class="detail-grid">
+                <section class="detail-section"><h3>Benefits</h3><p>${escHtml(scheme.benefits)}</p></section>
+                <section class="detail-section"><h3>Detailed eligibility</h3><p>${escHtml(scheme.eligibilityDetails)}</p></section>
+                <section class="detail-section"><h3>Who can apply</h3><p>${escHtml(scheme.whoCanApply)}</p></section>
+                <section class="detail-section"><h3>Required documents</h3><ul>${scheme.documents.map(doc => `<li>${escHtml(doc.name)}</li>`).join('')}</ul></section>
+                <section class="detail-section"><h3>Application process</h3><p>${escHtml(scheme.applicationProcedure)}</p></section>
+                <section class="detail-section"><h3>Deadline</h3><p>${escHtml(scheme.deadline || 'Not published')}</p></section>
+                <section class="detail-section"><h3>Official source</h3><p><a href="${escHtml(scheme.officialSourceUrl)}" target="_blank" rel="noopener">Open official source</a></p></section>
+                <section class="detail-section"><h3>Apply officially</h3><p><a href="${escHtml(scheme.officialApplicationUrl)}" target="_blank" rel="noopener">Open application website</a></p></section>
+            </div>
+            <div class="detail-actions"><button type="button" class="btn btn-primary" id="interested-btn">I'm Interested</button><p class="text-muted">Starting an application does not confirm eligibility or submit anything.</p></div>
+        `;
+    }
+
+    function renderApplicationForm(scheme) {
+        const profile = getProfile();
+        const existing = state.application && state.application.schemeId === scheme.id ? state.application.fields : {};
+        const fields = [
+            ['name', 'Full name', profile.name], ['mobile', 'Mobile number', profile.mobile], ['email', 'Email address', profile.email],
+            ['dateOfBirth', 'Date of birth', existing.dateOfBirth || ''], ['aadhaar', 'Aadhaar number', existing.aadhaar || ''],
+            ['address', 'Address', existing.address || ''], ['income', 'Annual income', existing.income || ''], ['education', 'Education details', existing.education || '']
+        ];
+        el.applicationContent.innerHTML = `
+            <button type="button" class="back-link" id="back-details-btn">&larr; Back to scheme details</button>
+            <div class="detail-heading application-heading"><div><span class="eyebrow">Application draft</span><h2 id="application-title">${escHtml(scheme.name)}</h2><p>We reused your profile and available documents. Complete only what is missing.</p></div></div>
+            <div class="notice-box"><strong>Review required</strong><span>Fields are editable. Missing information is marked below and will not be invented.</span></div>
+            <form id="application-form" class="application-form" novalidate>
+                ${fields.map(([key, label, value]) => `<div class="form-group ${value ? '' : 'field-missing'}"><label for="app-${key}">${label}${value ? '' : ' <span>Missing</span>'}</label><input id="app-${key}" name="${key}" class="form-control" value="${escHtml(value)}" ${key === 'dateOfBirth' ? 'type="date"' : ''} placeholder="Enter ${label.toLowerCase()} if available"></div>`).join('')}
+                <div class="application-docs"><h3>Documents to reuse</h3><p class="text-muted">Available documents will be included for your review.</p><ul>${(profile.documents.length ? profile.documents : ['No documents uploaded yet']).map(doc => `<li>${escHtml(doc)}</li>`).join('')}</ul></div>
+                <button type="submit" class="btn btn-primary">Continue to review <span aria-hidden="true">&rarr;</span></button>
+            </form>
+        `;
+    }
+
+    function renderApplicationReview() {
+        const scheme = findScheme(state.selectedScheme);
+        const fields = state.application.fields;
+        el.applicationContent.innerHTML = `
+            <button type="button" class="back-link" id="back-application-btn">&larr; Edit application</button>
+            <div class="detail-heading application-heading"><div><span class="eyebrow">Final review</span><h2>Check your application</h2><p>${escHtml(scheme.name)} will not be submitted until you click the final button.</p></div></div>
+            <div class="review-list">${Object.entries(fields).map(([key, value]) => `<div><dt>${escHtml(fieldLabel(key))}</dt><dd>${value ? escHtml(value) : '<span class="missing-text">Not provided</span>'}</dd></div>`).join('')}</div>
+            <div class="application-docs"><h3>Selected documents</h3><ul>${state.documents.length ? state.documents.map(doc => `<li>${escHtml(doc.type)} <span class="doc-ready">Available</span></li>`).join('') : '<li class="missing-text">No documents selected</li>'}</ul></div>
+            <div class="acknowledgement"><input type="checkbox" id="review-ack"> <label for="review-ack">I have reviewed the information and understand that the official authority will verify eligibility.</label></div>
+            <button type="button" class="btn btn-primary" id="submit-application-btn">Submit Application</button>
+            <p class="text-muted submit-note">This button represents the user's manual submission step in this prototype.</p>
+        `;
+    }
+
+    function fieldLabel(key) {
+        return { name: 'Full name', mobile: 'Mobile number', email: 'Email address', dateOfBirth: 'Date of birth', aadhaar: 'Aadhaar number', address: 'Address', income: 'Annual income', education: 'Education details' }[key] || key;
     }
 
     // ============================================================
@@ -435,8 +536,8 @@
                         <line x1="12" y1="18" x2="12" y2="12"/>
                         <line x1="9" y1="15" x2="15" y2="15"/>
                     </svg>
-                    <h3>${escHtml(t('emptyTitle'))}</h3>
-                    <p>${escHtml(t('emptyDesc'))}</p>
+                    <h3>No documents yet</h3>
+                    <p>Click "+ Add Document" to upload your first document.</p>
                 </div>`;
             return;
         }
@@ -444,8 +545,8 @@
         el.docGrid.innerHTML = docs.map(doc => `
             <article class="doc-card" data-id="${doc.id}">
                 ${doc.dataUrl
-                    ? `<img class="doc-card-thumb" src="${doc.dataUrl}" alt="${escHtml(doc.type)}" title="${escHtml(t('docView'))}" data-action="view">`
-                    : `<div class="doc-card-thumb-placeholder" data-action="view" title="${escHtml(t('docView'))}">
+                    ? `<img class="doc-card-thumb" src="${doc.dataUrl}" alt="${escHtml(doc.type)}" title="View document" data-action="view">`
+                    : `<div class="doc-card-thumb-placeholder" data-action="view" title="View document">
                            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                <polyline points="14 2 14 8 20 8"/>
@@ -454,15 +555,16 @@
                 }
                 <div class="doc-card-body">
                     <span class="doc-card-type">${escHtml(doc.type)}</span>
-                    <p class="doc-card-date">${escHtml(t('docAdded'))} ${formatDate(doc.addedAt)}</p>
+                    <p class="doc-card-date">Added ${formatDate(doc.addedAt)}</p>
                     <div class="doc-card-actions">
-                        <button class="btn btn-secondary" data-action="view">${escHtml(t('docView'))}</button>
-                        <button class="btn btn-danger"    data-action="delete">${escHtml(t('docDelete'))}</button>
+                        <button class="btn btn-secondary" data-action="view" title="View document">View</button>
+                        <button class="btn btn-danger" data-action="delete" title="Delete document">Delete</button>
                     </div>
                 </div>
             </article>
         `).join('');
 
+        // Event delegation for card actions
         el.docGrid.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', e => {
                 const card   = e.target.closest('[data-id]');
@@ -480,7 +582,7 @@
         if (!doc) return;
 
         el.viewModalTitle.textContent = doc.type;
-        el.viewModalDate.textContent  = t('docAdded') + ' ' + formatDate(doc.addedAt);
+        el.viewModalDate.textContent  = 'Added ' + formatDate(doc.addedAt);
 
         if (doc.dataUrl) {
             el.viewModalImg.src           = doc.dataUrl;
@@ -493,21 +595,23 @@
     }
 
     function deleteDocument(docId) {
-        if (!confirm(t('confirmDelete'))) return;
+        if (!confirm('Remove this document from your wallet?')) return;
         state.documents = state.documents.filter(d => d.id !== docId);
         persistDocuments();
+        apiFetch(`/api/documents/${encodeURIComponent(docId)}`, { method: 'DELETE' }).catch(() => {});
         renderDocumentGrid();
     }
 
     function addDocument(type, dataUrl) {
         const doc = {
-            id:      Date.now().toString(),
+            id:       Date.now().toString(),
             type,
             dataUrl,
-            addedAt: new Date().toISOString(),
+            addedAt:  new Date().toISOString(),
         };
         state.documents.unshift(doc); // newest first
         persistDocuments();
+        apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: doc.id, documentType: doc.type }) }).catch(() => {});
         closeUploadModal();
         renderDocumentGrid();
     }
@@ -520,10 +624,8 @@
         el.uploadModal.classList.remove('hidden');
         el.docTypeSelect.value = '';
         el.uploadOptions.classList.add('hidden');
-        state.pendingDocType      = null;
+        state.pendingDocType   = null;
         state.camera.capturedData = null;
-        // Translate static strings inside modal
-        window.I18n.applyTranslations();
     }
 
     function closeUploadModal() {
@@ -559,13 +661,13 @@
             el.cameraStream.srcObject = stream;
             showStep(el.stepCamera);
         } catch (err) {
-            alert(t('cameraAlert'));
+            alert('Camera access was denied or is unavailable. Please use the file picker instead.');
         }
     }
 
     function stopCamera() {
         if (state.camera.stream) {
-            state.camera.stream.getTracks().forEach(tr => tr.stop());
+            state.camera.stream.getTracks().forEach(t => t.stop());
             state.camera.stream = null;
         }
         el.cameraStream.srcObject = null;
@@ -608,28 +710,93 @@
     //  Event Binding
     // ============================================================
     function bindEvents() {
+        // Auth toggle
         el.toggleAuthBtn.addEventListener('click', () => {
             state.isSignUpMode = !state.isSignUpMode;
             renderAuthForm();
         });
 
+        // Auth form submit
         el.authForm.addEventListener('submit', e => {
             e.preventDefault();
             state.isSignUpMode ? handleSignUp() : handleSignIn();
         });
 
+        // Biometric
         el.enableBioBtn.addEventListener('click', () => {
+            // Attempt WebAuthn – if unsupported, just simulate
             if (window.PublicKeyCredential) {
-                alert(t('bioEnabled'));
+                alert('Device security enabled via your browser\'s passkey/biometric system.');
             } else {
-                alert(t('bioSimulated'));
+                alert('Biometric setup simulated. (WebAuthn not available in this browser/context.)');
             }
             finishAuth();
         });
         el.skipBioBtn.addEventListener('click', finishAuth);
 
+        // Dashboard: Add document
         el.addDocBtn.addEventListener('click', openUploadModal);
 
+        // Scheme and application navigation uses delegation because content is rendered per route.
+        document.addEventListener('click', e => {
+            const detailsButton = e.target.closest('[data-scheme-details]');
+            if (detailsButton) {
+                state.selectedScheme = detailsButton.dataset.schemeDetails;
+                state.currentView = 'details';
+                route();
+                return;
+            }
+            if (e.target.closest('#back-home-btn')) {
+                state.currentView = 'home';
+                state.selectedScheme = null;
+                route();
+                return;
+            }
+            if (e.target.closest('#interested-btn')) {
+                state.currentView = 'application';
+                route();
+                return;
+            }
+            if (e.target.closest('#back-details-btn')) {
+                state.currentView = 'details';
+                route();
+                return;
+            }
+            if (e.target.closest('#back-application-btn')) {
+                renderApplicationForm(findScheme(state.selectedScheme));
+                return;
+            }
+            if (e.target.closest('#submit-application-btn')) {
+                const acknowledgement = id('review-ack');
+                if (!acknowledgement.checked) {
+                    alert('Please confirm that you reviewed the application before submitting.');
+                    return;
+                }
+                const applications = JSON.parse(localStorage.getItem(KEYS.APPLICATIONS) || '[]');
+                applications.unshift({ id: Date.now().toString(), schemeId: state.selectedScheme, fields: state.application.fields, submittedAt: new Date().toISOString() });
+                localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(applications));
+                alert('Application submitted for manual processing.');
+                state.currentView = 'home';
+                state.selectedScheme = null;
+                route();
+            }
+        });
+
+        document.addEventListener('submit', e => {
+            if (e.target.id !== 'application-form') return;
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const fields = Object.fromEntries(formData.entries());
+            state.application = { schemeId: state.selectedScheme, fields };
+            renderApplicationReview();
+        });
+
+        el.languageSelect.addEventListener('change', () => {
+            state.language = el.languageSelect.value;
+            applyLanguage();
+        });
+
+        // Filter chips
         el.filterBar.addEventListener('click', e => {
             const chip = e.target.closest('.filter-chip');
             if (!chip) return;
@@ -639,12 +806,15 @@
             renderDocumentGrid();
         });
 
+        // Modal close
         el.closeModalBtn.addEventListener('click', closeUploadModal);
         el.modalOverlay.addEventListener('click', closeUploadModal);
 
+        // View modal close
         el.closeViewModal.addEventListener('click', () => el.viewModal.classList.add('hidden'));
         el.viewModalOverlay.addEventListener('click', () => el.viewModal.classList.add('hidden'));
 
+        // Doc type select
         el.docTypeSelect.addEventListener('change', () => {
             const type = el.docTypeSelect.value;
             if (type) {
@@ -655,6 +825,7 @@
             }
         });
 
+        // Upload options
         el.optGallery.addEventListener('click', () => el.fileInput.click());
 
         el.fileInput.addEventListener('change', () => {
@@ -665,12 +836,14 @@
 
         el.optDigiLocker.addEventListener('click', () => showStep(el.stepDigiLocker));
 
+        // Camera
         el.captureBtn.addEventListener('click', capturePhoto);
         el.cancelCameraBtn.addEventListener('click', () => {
             stopCamera();
             showStep(el.stepType);
         });
 
+        // Preview
         el.retakeBtn.addEventListener('click', () => {
             if (previewSource === 'camera') {
                 startCamera();
@@ -681,22 +854,24 @@
 
         el.saveDocBtn.addEventListener('click', () => {
             if (!state.pendingDocType) {
-                alert(t('errNoType'));
+                alert('Please select a document type first.');
                 return;
             }
             addDocument(state.pendingDocType, state.camera.capturedData);
         });
 
+        // DigiLocker
         el.digiConnectBtn.addEventListener('click', () => {
-            alert(t('digiLockerAlert'));
+            // Connection interface only — no real API call
+            alert('DigiLocker connection interface is ready.\n\nReal integration requires official DigiLocker API onboarding with your organisation\'s credentials. Your data is not sent anywhere in this prototype.');
         });
         el.digiCancelBtn.addEventListener('click', () => showStep(el.stepType));
 
+        // Keyboard: Escape closes modals
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
                 if (!el.uploadModal.classList.contains('hidden'))  closeUploadModal();
                 if (!el.viewModal.classList.contains('hidden'))    el.viewModal.classList.add('hidden');
-                closeLangDropdown();
             }
         });
     }
@@ -704,9 +879,25 @@
     // ============================================================
     //  Helpers
     // ============================================================
+    function applyLanguage() {
+        const labels = {
+            en: ['Schemes for your next step', 'Recommended schemes', 'View Details'],
+            hi: ['Aapke liye yojanaen', 'Sujhayi gayi yojanaen', 'Vivaran dekhen'],
+            mr: ['Tumachyasathi yojana', 'Shifaras kelelya yojana', 'Mahiti paha'],
+            ta: ['Ungalukkaana thittangal', 'Parinduraikkappatta thittangal', 'Vivaram paarkkavum']
+        }[state.language];
+        if (!labels) return;
+        el.homeView.querySelector('#home-title').textContent = labels[0];
+        const heading = el.homeView.querySelector('.section-heading h3');
+        if (heading) heading.textContent = labels[1];
+        el.homeView.querySelectorAll('[data-scheme-details]').forEach(button => {
+            button.childNodes[0].textContent = labels[2] + ' ';
+        });
+    }
+
     function val(elId) {
-        const node = document.getElementById(elId);
-        return node ? node.value.trim() : '';
+        const el = document.getElementById(elId);
+        return el ? el.value.trim() : '';
     }
 
     function escHtml(str) {
@@ -717,15 +908,7 @@
 
     function formatDate(iso) {
         const d = new Date(iso);
-        const lang = window.I18n.getCurrentLanguage();
-        return d.toLocaleDateString(lang + '-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-
-    function closeLangDropdown() {
-        if (el.langDropdown) {
-            el.langDropdown.classList.remove('open');
-            if (el.langBtn) el.langBtn.setAttribute('aria-expanded', 'false');
-        }
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
 })();
