@@ -8,6 +8,7 @@ interface PrimaryButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  disabled?: boolean;
 }
 
 export const PrimaryButton = ({
@@ -16,6 +17,7 @@ export const PrimaryButton = ({
   style,
   textStyle,
   variant = 'primary',
+  disabled = false,
 }: PrimaryButtonProps) => {
   const isSecondary = variant === 'secondary';
   const isDanger = variant === 'danger';
@@ -37,7 +39,8 @@ export const PrimaryButton = ({
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.buttonBase, getButtonStyle(), style]}
+      disabled={disabled}
+      style={[styles.buttonBase, getButtonStyle(), disabled && styles.buttonDisabled, style]}
       activeOpacity={0.8}
     >
       <Text style={[styles.textBase, getTextStyle(), textStyle]}>{title}</Text>
@@ -71,6 +74,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: COLORS.primary,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   textBase: {
     fontSize: 16,

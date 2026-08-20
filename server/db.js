@@ -12,6 +12,7 @@ const dbFilePath = path.resolve(dataDir, 'sugamseva_db.json');
 let dbState = {
   users: [],
   fingerprints: [],
+  biometric_devices: [],
   user_applications: [],
   user_documents: []
 };
@@ -30,6 +31,8 @@ const loadDb = () => {
   } catch (error) {
     console.error('[DB] Error loading database, initializing fresh state:', error);
   }
+  // Backfill new collections for databases created before this field existed
+  if (!dbState.biometric_devices) dbState.biometric_devices = [];
 };
 
 // Save database to disk atomically
@@ -92,6 +95,45 @@ const db = {
         saveDb();
       }
       return fp;
+    }
+  },
+
+  // Biometric Devices (real device-bound biometric sign-in)
+  // A "device secret" is created only after the OS confirms a real fingerprint/Face ID
+  // match against biometrics already enrolled on that phone. We never receive or store
+  // the fingerprint itself - only a hash of a random secret that the OS-gated secure
+  // storage on the device released to us.
+  biometricDevices: {
+    findByUserAndDevice: (userId, deviceId) => dbState.biometric_devices.find(d => d.user_id === userId && d.device_id === deviceId),
+    findByUserId: (userId) => dbState.biometric_devices.filter(d => d.user_id === userId),
+    create: (device) => {
+      dbState.biometric_devices.push(device);
+      saveDb();
+      return device;
+    },
+    updateSecret: (userId, deviceId, secretHash, deviceName) => {
+      const device = dbState.biometric_devices.find(d => d.user_id === userId && d.device_id === deviceId);
+      if (device) {
+        device.secret_hash = secretHash;
+        if (deviceName) device.device_name = deviceName;
+        device.last_used_at = new Date().toISOString();
+        saveDb();
+      }
+      return device;
+    },
+    updateLastUsed: (userId, deviceId) => {
+      const device = dbState.biometric_devices.find(d => d.user_id === userId && d.device_id === deviceId);
+      if (device) {
+        device.last_used_at = new Date().toISOString();
+        saveDb();
+      }
+      return device;
+    },
+    remove: (userId, deviceId) => {
+      const before = dbState.biometric_devices.length;
+      dbState.biometric_devices = dbState.biometric_devices.filter(d => !(d.user_id === userId && d.device_id === deviceId));
+      saveDb();
+      return dbState.biometric_devices.length < before;
     }
   },
 

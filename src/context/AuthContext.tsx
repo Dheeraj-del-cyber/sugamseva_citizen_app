@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, FingerprintRecord } from '../types';
 import { api, setAuthToken, getAuthToken, SignUpParams } from '../services/api';
+import {
+  getDeviceId,
+  getDeviceName,
+  checkBiometricHardware,
+  runOsBiometricPrompt,
+  generateAndStoreBiometricSecret,
+  getStoredBiometricSecret,
+  hasLocalBiometricSecret,
+  clearBiometricSecret,
+} from '../services/biometrics';
 
 interface AuthContextType {
   user: User | null;
@@ -9,9 +19,17 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   authError: string | null;
+  biometricAvailableOnThisDevice: boolean;
+  biometricEnabledOnThisDevice: boolean;
   signUp: (params: SignUpParams) => Promise<boolean>;
   signIn: (phone: string, password: string) => Promise<boolean>;
-  signInWithBiometrics: (phone: string, fingerIndex?: number) => Promise<boolean>;
+  /** Enrolls THIS device for real fingerprint/Face ID sign-in. Requires the user to
+   * already be signed in, and requires the phone's own OS biometric prompt to succeed. */
+  enableBiometricSignIn: () => Promise<{ success: boolean; error?: string }>;
+  disableBiometricSignIn: () => Promise<void>;
+  /** Signs in using a real OS fingerprint/Face ID check on this device. */
+  signInWithBiometrics: (phone: string) => Promise<boolean>;
+  checkDeviceHasBiometricEnabled: (phone: string) => Promise<boolean>;
   updateProfile: (updates: { name?: string; email?: string; avatar?: string }) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
   logout: () => void;
@@ -26,6 +44,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [biometricAvailableOnThisDevice, setBiometricAvailableOnThisDevice] = useState(false);
+  const [biometricEnabledOnThisDevice, setBiometricEnabledOnThisDevice] = useState(false);
+  const [deviceId, setDeviceId] = useState<string>('');
+
+  // Discover real hardware capability + local enrollment state on mount
+  useEffect(() => {
+    const initBiometricState = async () => {
+      const id = await getDeviceId();
+      setDeviceId(id);
+      const hw = await checkBiometricHardware();
+      setBiometricAvailableOnThisDevice(hw.available);
+      const hasSecret = await hasLocalBiometricSecret(id);
+      setBiometricEnabledOnThisDevice(hasSecret);
+    };
+    initBiometricState();
+  }, []);
 
   // Initialize and check existing auth session
   useEffect(() => {
@@ -106,12 +140,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign In with Phone + Fingerprint Biometrics
-  const signInWithBiometrics = async (phone: string, fingerIndex: number = 0): Promise<boolean> => {
+  // Enable REAL fingerprint / Face ID sign-in on this device. Must be called while
+  // already signed in. Runs the actual OS biometric prompt - nothing is registered
+  // unless the phone's own sensor confirms a live match against the person's enrolled
+  // print/face.
+  const enableBiometricSignIn = async (): Promise<{ success: boolean; error?: string }> => {
+    const hw = await checkBiometricHardware();
+    if (!hw.available) {
+      return { success: false, error: hw.reason };
+    }
+
+    const osResult = await runOsBiometricPrompt('Confirm your fingerprint to enable fingerprint sign-in');
+    if (!osResult.success) {
+      return { success: false, error: osResult.error };
+    }
+
+    try {
+      const secret = await generateAndStoreBiometricSecret(deviceId);
+      await api.registerBiometricDevice(deviceId, getDeviceName(), secret);
+      setBiometricEnabledOnThisDevice(true);
+      await refreshProfile();
+      return { success: true };
+    } catch (error: any) {
+      await clearBiometricSecret(deviceId);
+      return { success: false, error: error.message || 'Could not enable fingerprint sign-in. Please try again.' };
+    }
+  };
+
+  const disableBiometricSignIn = async (): Promise<void> => {
+    try {
+      await api.removeBiometricDevice(deviceId);
+    } catch (e) {
+      console.warn('[AuthContext] Failed to remove biometric device on server:', e);
+    }
+    await clearBiometricSecret(deviceId);
+    setBiometricEnabledOnThisDevice(false);
+  };
+
+  const checkDeviceHasBiometricEnabled = async (phone: string): Promise<boolean> => {
+    try {
+      const hasSecret = await hasLocalBiometricSecret(deviceId);
+      if (!hasSecret) return false;
+      const res = await api.checkBiometricStatus(phone, deviceId);
+      return !!res.enabled;
+    } catch {
+      return false;
+    }
+  };
+
+  // Sign In with Phone + a REAL device fingerprint/Face ID check
+  const signInWithBiometrics = async (phone: string): Promise<boolean> => {
     setIsLoading(true);
     setAuthError(null);
+
+    const hw = await checkBiometricHardware();
+    if (!hw.available) {
+      setAuthError(hw.reason || 'Fingerprint sign-in is not available on this device.');
+      setIsLoading(false);
+      return false;
+    }
+
+    const osResult = await runOsBiometricPrompt('Sign in to Sugam Seva');
+    if (!osResult.success) {
+      setAuthError(osResult.error || 'Fingerprint / Face ID did not match.');
+      setIsLoading(false);
+      return false;
+    }
+
+    const deviceSecret = await getStoredBiometricSecret(deviceId);
+    if (!deviceSecret) {
+      setAuthError('Fingerprint sign-in is not set up for this account on this device. Please sign in with your password and enable it from your profile.');
+      setIsLoading(false);
+      return false;
+    }
+
     try {
-      const response = await api.signin({ phone, isBiometric: true, fingerIndex });
+      const response = await api.signin({ phone, isBiometric: true, deviceId, deviceSecret });
       if (response.success && response.token && response.user) {
         setAuthToken(response.token);
         setToken(response.token);
@@ -183,9 +287,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user,
         isLoading,
         authError,
+        biometricAvailableOnThisDevice,
+        biometricEnabledOnThisDevice,
         signUp,
         signIn,
+        enableBiometricSignIn,
+        disableBiometricSignIn,
         signInWithBiometrics,
+        checkDeviceHasBiometricEnabled,
         updateProfile,
         refreshProfile,
         logout,

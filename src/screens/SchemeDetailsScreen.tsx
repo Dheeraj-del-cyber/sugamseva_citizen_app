@@ -3,14 +3,23 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
-import { mockSchemes } from '../data/mockData';
+import { useData } from '../context/DataContext';
 import { PrimaryButton } from '../components/PrimaryButton';
 
 export const SchemeDetailsScreen = () => {
   const { t, currentScreen, pushScreen } = useAppNavigation();
+  const { schemes } = useData();
 
   const schemeId = currentScreen.params?.schemeId || 'pm-kisan';
-  const scheme = mockSchemes.find((s) => s.id === schemeId) || mockSchemes[0];
+  const scheme = schemes.find((s) => s.id === schemeId) || schemes[0];
+
+  if (!scheme) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: COLORS.textMuted }}>Loading scheme details...</Text>
+      </View>
+    );
+  }
 
   const handleShare = async () => {
     try {

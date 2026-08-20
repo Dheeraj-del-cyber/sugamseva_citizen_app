@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
-import { mockDocuments } from '../data/mockData';
+import { useData } from '../context/DataContext';
 import { DocumentCard } from '../components/DocumentCard';
 
 export const DigiLockerScreen = () => {
   const { t, popScreen } = useAppNavigation();
+  const { documents, isLoadingDocuments } = useData();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -23,18 +24,28 @@ export const DigiLockerScreen = () => {
           <View style={styles.logoBadge}>
             <Ionicons name="lock-closed" size={20} color={COLORS.white} />
           </View>
-          <Text style={styles.logoText}>DigiLocker</Text>
+          <Text style={styles.logoText}>DigiLocker-style Records</Text>
         </View>
         <Text style={styles.headerDesc}>
-          Your documents are securely fetched and synced with the national DigiLocker repository.
+          This prototype lists the documents on file for your citizen account. A production
+          version would connect to the real DigiLocker API rather than this app's own database.
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Synced Documents</Text>
+      <Text style={styles.sectionTitle}>Documents on File</Text>
 
-      {mockDocuments.map((doc) => (
-        <DocumentCard key={doc.id} document={doc} />
-      ))}
+      {isLoadingDocuments ? (
+        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
+      ) : documents.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="folder-open-outline" size={40} color={COLORS.textMuted} />
+          <Text style={styles.emptyText}>No documents on file yet.</Text>
+        </View>
+      ) : (
+        documents.map((doc) => (
+          <DocumentCard key={doc.id} document={doc} />
+        ))
+      )}
     </ScrollView>
   );
 };
@@ -103,6 +114,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 12,
     letterSpacing: 0.5,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 10,
   },
 });
 export default DigiLockerScreen;

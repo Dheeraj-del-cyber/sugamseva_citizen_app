@@ -65,19 +65,14 @@ export interface SignUpParams {
   phone: string;
   password: string;
   email?: string;
-  fingerprints: {
-    fingerIndex: number;
-    fingerName: string;
-    biometricTemplate?: string;
-    scanQuality?: number;
-  }[];
 }
 
 export interface SignInParams {
   phone: string;
   password?: string;
   isBiometric?: boolean;
-  fingerIndex?: number;
+  deviceId?: string;
+  deviceSecret?: string;
 }
 
 export interface AuthResponseData {
@@ -114,14 +109,27 @@ export const api = {
     });
   },
 
-  // Auth: Verify specific biometric
-  verifyBiometric: async (phone: string, fingerIndex: number) => {
-    return await request<{ success: boolean; verified: boolean; fingerName: string; quality: number }>(
-      '/auth/biometric-verify',
-      {
-        method: 'POST',
-        body: JSON.stringify({ phone, fingerIndex }),
-      }
+  // Auth: Register real biometric sign-in for this device (call only after a genuine
+  // OS fingerprint/Face ID check has succeeded)
+  registerBiometricDevice: async (deviceId: string, deviceName: string, secret: string) => {
+    return await request<{ success: boolean; message: string }>('/auth/biometric/register', {
+      method: 'POST',
+      body: JSON.stringify({ deviceId, deviceName, secret }),
+    });
+  },
+
+  // Auth: Remove biometric sign-in for a device
+  removeBiometricDevice: async (deviceId: string) => {
+    return await request<{ success: boolean; removed: boolean }>(`/auth/biometric/${deviceId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Auth: Check (pre-login) whether fingerprint sign-in is already enabled for this
+  // phone number on this device
+  checkBiometricStatus: async (phone: string, deviceId: string) => {
+    return await request<{ success: boolean; enabled: boolean }>(
+      `/auth/biometric/status?phone=${encodeURIComponent(phone)}&deviceId=${encodeURIComponent(deviceId)}`
     );
   },
 

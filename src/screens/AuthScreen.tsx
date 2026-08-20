@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,19 +15,21 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useAuth } from '../context/AuthContext';
-import { FingerprintEnrollmentData } from '../types';
 import { BiometricScannerModal } from '../components/BiometricScannerModal';
-
-const INITIAL_FINGERS: FingerprintEnrollmentData[] = [
-  { fingerIndex: 0, fingerName: 'Right Thumb', fingerLabelKey: 'rightThumb', isScanned: false },
-  { fingerIndex: 1, fingerName: 'Right Index', fingerLabelKey: 'rightIndex', isScanned: false },
-  { fingerIndex: 2, fingerName: 'Left Thumb', fingerLabelKey: 'leftThumb', isScanned: false },
-  { fingerIndex: 3, fingerName: 'Left Index', fingerLabelKey: 'leftIndex', isScanned: false },
-];
 
 export const AuthScreen: React.FC = () => {
   const { t, activeLanguage, setLanguage } = useAppNavigation();
-  const { signIn, signUp, signInWithBiometrics, isLoading, authError, clearError } = useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithBiometrics,
+    enableBiometricSignIn,
+    checkDeviceHasBiometricEnabled,
+    isLoading,
+    authError,
+    clearError,
+    biometricAvailableOnThisDevice,
+  } = useAuth();
 
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
@@ -35,6 +37,7 @@ export const AuthScreen: React.FC = () => {
   const [signInPhone, setSignInPhone] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
   const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [signInBiometricEnabled, setSignInBiometricEnabled] = useState(false);
 
   // Sign Up Form State
   const [signUpName, setSignUpName] = useState('');
@@ -42,78 +45,33 @@ export const AuthScreen: React.FC = () => {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
-  const [enrolledFingers, setEnrolledFingers] = useState<FingerprintEnrollmentData[]>(INITIAL_FINGERS);
 
-  // Scanner Modal State
+  // Real biometric prompt modal state
   const [scannerVisible, setScannerVisible] = useState(false);
-  const [activeScanIndex, setActiveScanIndex] = useState<number>(0);
-  const [isBiometricLoginScan, setIsBiometricLoginScan] = useState(false);
+  const [scannerPurpose, setScannerPurpose] = useState<'enroll' | 'signin'>('signin');
+  // Shown right after a fresh sign-up, offering to turn on fingerprint sign-in
+  const [showEnrollOffer, setShowEnrollOffer] = useState(false);
 
-  // Switch tabs
   const handleTabChange = (mode: 'signin' | 'signup') => {
     clearError();
     setAuthMode(mode);
   };
 
-  // Open scanner for specific finger
-  const openFingerScanner = (index: number) => {
-    setIsBiometricLoginScan(false);
-    setActiveScanIndex(index);
-    setScannerVisible(true);
-  };
-
-  // Open scanner for Biometric Sign In
-  const openBiometricSignInScanner = () => {
-    if (!signInPhone.trim()) {
-      Alert.alert("Phone Required", "Please enter your registered mobile number first to authenticate with fingerprint.");
-      return;
-    }
-    setIsBiometricLoginScan(true);
-    setActiveScanIndex(0);
-    setScannerVisible(true);
-  };
-
-  // Handle Scan Completed
-  const handleScanComplete = (
-    index: number,
-    scanData: { fingerName: string; biometricTemplate: string; scanQuality: number; scannedAt: string }
-  ) => {
-    if (isBiometricLoginScan) {
-      setScannerVisible(false);
-      // Perform biometric login
-      signInWithBiometrics(signInPhone, index);
-    } else {
-      setEnrolledFingers(prev => {
-        const updated = [...prev];
-        updated[index] = {
-          ...updated[index],
-          isScanned: true,
-          biometricTemplate: scanData.biometricTemplate,
-          scanQuality: scanData.scanQuality,
-          scannedAt: scanData.scannedAt
-        };
-        return updated;
+  // As the person types their sign-in phone number, check (locally + server) whether
+  // fingerprint sign-in was already enabled for that account on this exact device.
+  useEffect(() => {
+    let cancelled = false;
+    const digits = signInPhone.replace(/\D/g, '');
+    if (digits.length === 10 && biometricAvailableOnThisDevice) {
+      checkDeviceHasBiometricEnabled(digits).then(enabled => {
+        if (!cancelled) setSignInBiometricEnabled(enabled);
       });
-    }
-  };
-
-  // Handle Next Finger in Scanner
-  const handleScanNext = () => {
-    if (activeScanIndex < 3) {
-      setActiveScanIndex(activeScanIndex + 1);
     } else {
-      setScannerVisible(false);
+      setSignInBiometricEnabled(false);
     }
-  };
+    return () => { cancelled = true; };
+  }, [signInPhone, biometricAvailableOnThisDevice]);
 
-  // Auto-scan all 4 fingers sequentially
-  const handleScanAllFingers = () => {
-    setIsBiometricLoginScan(false);
-    setActiveScanIndex(0);
-    setScannerVisible(true);
-  };
-
-  // Handle Sign In Submit
   const handleSignInSubmit = async () => {
     if (!signInPhone.trim() || !signInPassword.trim()) {
       Alert.alert("Missing Fields", t('pleaseCompleteForm'));
@@ -122,7 +80,33 @@ export const AuthScreen: React.FC = () => {
     await signIn(signInPhone, signInPassword);
   };
 
-  // Handle Sign Up Submit
+  const handleBiometricSignIn = async () => {
+    if (!signInPhone.trim()) {
+      Alert.alert("Phone Required", "Please enter your registered mobile number first.");
+      return;
+    }
+    setScannerPurpose('signin');
+    setScannerVisible(true);
+  };
+
+  const handleScannerResult = async (result: { success: boolean; error?: string }) => {
+    if (!result.success) return;
+
+    if (scannerPurpose === 'signin') {
+      await signInWithBiometrics(signInPhone);
+      setScannerVisible(false);
+    } else {
+      // enroll: the OS already confirmed the real fingerprint/Face ID; now register
+      // this device with the server.
+      const res = await enableBiometricSignIn();
+      setScannerVisible(false);
+      setShowEnrollOffer(false);
+      if (!res.success) {
+        Alert.alert('Could not enable fingerprint sign-in', res.error || 'Please try again from your profile later.');
+      }
+    }
+  };
+
   const handleSignUpSubmit = async () => {
     if (!signUpName.trim() || !signUpPhone.trim() || !signUpPassword.trim() || !signUpConfirmPassword.trim()) {
       Alert.alert("Missing Fields", t('pleaseCompleteForm'));
@@ -139,35 +123,15 @@ export const AuthScreen: React.FC = () => {
       return;
     }
 
-    // Verify all 4 fingers scanned
-    const allScanned = enrolledFingers.every(f => f.isScanned);
-    if (!allScanned) {
-      Alert.alert("Biometric Enrollment Required", t('allFingersRequired'));
-      return;
-    }
-
-    const fingerprintsPayload = enrolledFingers.map(f => ({
-      fingerIndex: f.fingerIndex,
-      fingerName: f.fingerName,
-      biometricTemplate: f.biometricTemplate,
-      scanQuality: f.scanQuality || 98
-    }));
-
-    await signUp({
+    const ok = await signUp({
       name: signUpName.trim(),
       phone: signUpPhone.trim(),
       password: signUpPassword,
-      fingerprints: fingerprintsPayload
     });
-  };
 
-  const scannedCount = enrolledFingers.filter(f => f.isScanned).length;
-
-  const getFingerLabel = (key?: string, defaultName?: string) => {
-    if (key && (t as any)(key)) {
-      return (t as any)(key);
+    if (ok && biometricAvailableOnThisDevice) {
+      setShowEnrollOffer(true);
     }
-    return defaultName || 'Finger';
   };
 
   return (
@@ -249,7 +213,7 @@ export const AuthScreen: React.FC = () => {
         {/* ================================================= */}
         {/* SIGN IN FORM */}
         {/* ================================================= */}
-        {authMode === 'signin' && (
+        {authMode === 'signin' && !showEnrollOffer && (
           <View style={styles.formCard}>
             <Text style={styles.formHeaderTitle}>{t('signInTitle')}</Text>
             <Text style={styles.formHeaderSubtitle}>{t('signInSubtitle')}</Text>
@@ -316,29 +280,33 @@ export const AuthScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('orSignInWith')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            {/* Real Biometric Quick Sign In - only shown once we've confirmed this
+                device already has fingerprint sign-in enabled for the typed phone number */}
+            {signInBiometricEnabled && (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>{t('orSignInWith')}</Text>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            {/* Biometric Quick Sign In Button */}
-            <TouchableOpacity
-              onPress={openBiometricSignInScanner}
-              disabled={isLoading}
-              style={styles.biometricLoginCard}
-              activeOpacity={0.8}
-            >
-              <View style={styles.bioIconCircle}>
-                <MaterialCommunityIcons name="fingerprint" size={28} color={COLORS.primary} />
-              </View>
-              <View style={styles.bioLoginTextWrap}>
-                <Text style={styles.bioLoginTitle}>{t('biometricSignIn')}</Text>
-                <Text style={styles.bioLoginSubtitle}>{t('biometricAuthPrompt')}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleBiometricSignIn}
+                  disabled={isLoading}
+                  style={styles.biometricLoginCard}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.bioIconCircle}>
+                    <MaterialCommunityIcons name="fingerprint" size={28} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.bioLoginTextWrap}>
+                    <Text style={styles.bioLoginTitle}>{t('biometricSignIn')}</Text>
+                    <Text style={styles.bioLoginSubtitle}>{t('biometricAuthPrompt')}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Switch to Sign Up */}
             <TouchableOpacity
@@ -353,9 +321,9 @@ export const AuthScreen: React.FC = () => {
         )}
 
         {/* ================================================= */}
-        {/* SIGN UP FORM (WITH 4-FINGER BIOMETRIC TRACKING) */}
+        {/* SIGN UP FORM */}
         {/* ================================================= */}
-        {authMode === 'signup' && (
+        {authMode === 'signup' && !showEnrollOffer && (
           <View style={styles.formCard}>
             <Text style={styles.formHeaderTitle}>{t('signUpTitle')}</Text>
             <Text style={styles.formHeaderSubtitle}>{t('signUpSubtitle')}</Text>
@@ -436,90 +404,11 @@ export const AuthScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* ======================================= */}
-            {/* 4-FINGER BIOMETRIC ENROLLMENT SECTION */}
-            {/* ======================================= */}
-            <View style={styles.biometricSection}>
-              <View style={styles.biometricSectionHeader}>
-                <View style={styles.bioSectionTitleRow}>
-                  <MaterialCommunityIcons name="fingerprint" size={22} color={COLORS.primary} />
-                  <Text style={styles.biometricSectionTitle}>{t('biometricEnrollmentTitle')}</Text>
-                </View>
-                <View style={[styles.scannedCountPill, scannedCount === 4 && styles.scannedCountPillFull]}>
-                  <Text style={[styles.scannedCountText, scannedCount === 4 && styles.scannedCountTextFull]}>
-                    {scannedCount}/4 Captured
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.biometricSectionSub}>{t('biometricEnrollmentSub')}</Text>
-
-              {/* Quick Action: Scan All */}
-              {scannedCount < 4 && (
-                <TouchableOpacity
-                  onPress={handleScanAllFingers}
-                  style={styles.scanAllBannerBtn}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="sparkles" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
-                  <Text style={styles.scanAllBannerText}>Start Sequential 4-Finger Scanner</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* 4 Fingers Grid */}
-              <View style={styles.fingersGrid}>
-                {enrolledFingers.map((finger, idx) => (
-                  <TouchableOpacity
-                    key={finger.fingerIndex}
-                    onPress={() => openFingerScanner(idx)}
-                    style={[
-                      styles.fingerCard,
-                      finger.isScanned && styles.fingerCardScanned
-                    ]}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.fingerCardHeader}>
-                      <View style={[styles.fingerIconCircle, finger.isScanned && styles.fingerIconCircleScanned]}>
-                        <MaterialCommunityIcons
-                          name="fingerprint"
-                          size={28}
-                          color={finger.isScanned ? '#10B981' : '#64748B'}
-                        />
-                      </View>
-                      {finger.isScanned ? (
-                        <View style={styles.scannedBadge}>
-                          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                        </View>
-                      ) : (
-                        <View style={styles.pendingBadge}>
-                          <Text style={styles.pendingBadgeText}>{idx + 1}</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <Text style={styles.fingerNameText} numberOfLines={1}>
-                      {getFingerLabel(finger.fingerLabelKey, finger.fingerName)}
-                    </Text>
-
-                    <View style={styles.fingerStatusWrap}>
-                      {finger.isScanned ? (
-                        <Text style={styles.fingerQualityText}>Quality: {finger.scanQuality}%</Text>
-                      ) : (
-                        <Text style={styles.fingerActionText}>Tap to Scan</Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Seal Indicator */}
-              {scannedCount === 4 && (
-                <View style={styles.sealedBanner}>
-                  <Ionicons name="shield-checkmark" size={20} color="#10B981" />
-                  <Text style={styles.sealedBannerText}>
-                    All 4 Biometrics Ready & Cryptographically Encrypted
-                  </Text>
-                </View>
-              )}
+            <View style={styles.infoNote}>
+              <Ionicons name="information-circle-outline" size={16} color={COLORS.textMuted} />
+              <Text style={styles.infoNoteText}>
+                You can turn on fingerprint / Face ID sign-in for this device right after creating your account.
+              </Text>
             </View>
 
             {/* Create Account Button */}
@@ -550,21 +439,43 @@ export const AuthScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* ================================================= */}
+        {/* POST SIGN-UP: OFFER REAL BIOMETRIC ENROLLMENT      */}
+        {/* ================================================= */}
+        {showEnrollOffer && (
+          <View style={styles.formCard}>
+            <View style={styles.enrollIconWrap}>
+              <MaterialCommunityIcons name="fingerprint" size={48} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.formHeaderTitle, { textAlign: 'center' }]}>Enable Fingerprint Sign-In?</Text>
+            <Text style={[styles.formHeaderSubtitle, { textAlign: 'center' }]}>
+              Account created. Next time, unlock Sugam Seva instantly using your phone's own fingerprint or Face ID sensor - the same one that unlocks your phone. We never see or store the fingerprint itself.
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => { setScannerPurpose('enroll'); setScannerVisible(true); }}
+              style={styles.submitButton}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="finger-print" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
+              <Text style={styles.submitButtonText}>Enable Fingerprint Sign-In</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setShowEnrollOffer(false)} style={styles.switchTabBtn}>
+              <Text style={styles.switchTabText}>Maybe later</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Interactive Biometric Scanner Modal */}
+      {/* Real OS Biometric Prompt */}
       <BiometricScannerModal
         visible={scannerVisible}
-        fingerIndex={activeScanIndex}
-        fingerName={
-          isBiometricLoginScan
-            ? "Biometric Login Sensor"
-            : getFingerLabel(enrolledFingers[activeScanIndex]?.fingerLabelKey, enrolledFingers[activeScanIndex]?.fingerName)
-        }
+        purpose={scannerPurpose}
+        promptMessage={scannerPurpose === 'enroll' ? 'Confirm your fingerprint to enable fingerprint sign-in' : 'Sign in to Sugam Seva'}
         onClose={() => setScannerVisible(false)}
-        onScanComplete={handleScanComplete}
-        onScanNext={handleScanNext}
-        hasNextFinger={!isBiometricLoginScan && activeScanIndex < 3}
+        onResult={handleScannerResult}
       />
     </KeyboardAvoidingView>
   );
@@ -833,156 +744,30 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-
-  // 4-Finger Biometric Enrollment
-  biometricSection: {
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginVertical: 16,
-  },
-  biometricSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  bioSectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  biometricSectionTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-    marginLeft: 6,
-  },
-  scannedCountPill: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
     borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
-  scannedCountPillFull: {
-    backgroundColor: '#DCFCE7',
-  },
-  scannedCountText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#64748B',
-  },
-  scannedCountTextFull: {
-    color: '#15803D',
-  },
-  biometricSectionSub: {
+  infoNoteText: {
     fontSize: 12,
     color: COLORS.textMuted,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  scanAllBannerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: COLORS.lightBorder,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  scanAllBannerText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  fingersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  fingerCard: {
-    width: '48%',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    marginBottom: 10,
-  },
-  fingerCardScanned: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
-  },
-  fingerCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  fingerIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fingerIconCircleScanned: {
-    backgroundColor: '#DCFCE7',
-  },
-  pendingBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pendingBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#64748B',
-  },
-  scannedBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fingerNameText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.textDark,
-  },
-  fingerStatusWrap: {
-    marginTop: 4,
-  },
-  fingerActionText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  fingerQualityText: {
-    fontSize: 10,
-    color: '#059669',
-    fontWeight: 'bold',
-  },
-  sealedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 6,
-  },
-  sealedBannerText: {
-    fontSize: 11,
-    color: '#047857',
-    fontWeight: '600',
     marginLeft: 8,
     flex: 1,
+    lineHeight: 17,
+  },
+  enrollIconWrap: {
+    alignSelf: 'center',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
 });
 export default AuthScreen;

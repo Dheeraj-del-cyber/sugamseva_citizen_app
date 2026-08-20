@@ -188,7 +188,7 @@ app.get('/api/health', (req, res) => {
  */
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { name, phone, password, fingerprints, email } = req.body;
+    const { name, phone, password, email } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Full name is required' });
@@ -209,13 +209,6 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(409).json({ error: 'This mobile number is already registered. Please sign in.' });
     }
 
-    // Validate that 4 fingerprints are provided
-    if (!fingerprints || !Array.isArray(fingerprints) || fingerprints.length < 4) {
-      return res.status(400).json({
-        error: 'All 4 fingers (Right Thumb, Right Index, Left Thumb, Left Index) must be enrolled and scanned.'
-      });
-    }
-
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
     const passwordHash = await bcrypt.hash(password, 10);
@@ -234,40 +227,11 @@ app.post('/api/auth/signup', async (req, res) => {
       updated_at: now
     });
 
-    // 2. Save 4 Fingerprints
-    const standardFingers = ['Right Thumb', 'Right Index', 'Left Thumb', 'Left Index'];
-    const savedFingerprints = [];
+    // Note: fingerprint / biometric sign-in is enrolled separately, after the account
+    // exists, via POST /api/auth/biometric/register - and only once the device's OS has
+    // confirmed a real fingerprint/Face ID match. See that route for details.
 
-    for (let i = 0; i < 4; i++) {
-      const fp = fingerprints[i] || {};
-      const fpId = `fp_${userId}_${i}`;
-      const fingerName = fp.fingerName || standardFingers[i];
-      const template = fp.biometricTemplate || `BIO_SHA256_${Buffer.from(`${userId}_${i}_${Date.now()}`).toString('base64')}`;
-      const scanQuality = fp.scanQuality || Math.floor(Math.random() * 5 + 95);
-
-      const fpRecord = db.fingerprints.create({
-        id: fpId,
-        user_id: userId,
-        finger_index: i,
-        finger_name: fingerName,
-        biometric_template: template,
-        scan_quality: scanQuality,
-        enrolled_at: now,
-        last_verified_at: now
-      });
-
-      savedFingerprints.push({
-        id: fpRecord.id,
-        userId: fpRecord.user_id,
-        fingerIndex: fpRecord.finger_index,
-        fingerName: fpRecord.finger_name,
-        scanQuality: fpRecord.scan_quality,
-        enrolledAt: fpRecord.enrolled_at,
-        lastVerifiedAt: fpRecord.last_verified_at
-      });
-    }
-
-    // 3. Seed Initial DigiLocker Documents for this new citizen
+    // 2. Seed Initial DigiLocker Documents for this new citizen
     const initialDocs = [
       { id: `doc_${userId}_1`, user_id: userId, name: 'Aadhaar Card', type: 'Identity', status: 'Verified', source: 'DigiLocker', doc_number: `XXXX XXXX ${cleanPhone.slice(-4)}` },
       { id: `doc_${userId}_2`, user_id: userId, name: 'Bank Account (Jan Dhan)', type: 'Financial', status: 'Verified', source: 'DigiLocker', doc_number: `SBI - *******${cleanPhone.slice(-4)}` },
@@ -291,15 +255,15 @@ app.post('/api/auth/signup', async (req, res) => {
       email: userEmail,
       avatar,
       createdAt: now,
-      fingerprintsCount: savedFingerprints.length
+      fingerprintsCount: 0
     };
 
     return res.status(201).json({
       success: true,
-      message: 'Citizen account created successfully with 4-finger biometric enrollment',
+      message: 'Citizen account created successfully',
       token,
       user: userObj,
-      fingerprints: savedFingerprints
+      fingerprints: []
     });
   } catch (error) {
     console.error('Sign up error:', error);
@@ -313,7 +277,7 @@ app.post('/api/auth/signup', async (req, res) => {
  */
 app.post('/api/auth/signin', async (req, res) => {
   try {
-    const { phone, password, isBiometric, fingerIndex } = req.body;
+    const { phone, password, isBiometric, deviceId, deviceSecret } = req.body;
 
     const cleanPhone = normalizePhone(phone);
     if (!cleanPhone || cleanPhone.length !== 10) {
@@ -325,15 +289,28 @@ app.post('/api/auth/signin', async (req, res) => {
       return res.status(404).json({ error: 'No citizen account found with this mobile number. Please sign up.' });
     }
 
-    // Biometric Authentication
+    // Biometric Authentication - real, device-bound.
+    // The client only reaches this branch after its OS BiometricPrompt / Face ID / Touch
+    // ID has already confirmed the person's real, live fingerprint or face against what
+    // is enrolled on that phone, and released a secret from the phone's secure hardware
+    // storage. We never see or store the fingerprint itself - only proof that this exact
+    // previously-registered device, unlocked by a real biometric check, is asking to sign in.
     if (isBiometric) {
-      const fps = db.fingerprints.findByUserId(user.id);
-      if (!fps || fps.length === 0) {
-        return res.status(400).json({ error: 'No biometric fingerprint record found for this account. Please sign in with password.' });
+      if (!deviceId || !deviceSecret) {
+        return res.status(400).json({ error: 'Biometric sign-in requires this device to be registered first.' });
       }
 
-      const matchedFingerIndex = fingerIndex !== undefined ? fingerIndex : 0;
-      db.fingerprints.updateLastVerified(user.id, matchedFingerIndex);
+      const device = db.biometricDevices.findByUserAndDevice(user.id, deviceId);
+      if (!device) {
+        return res.status(404).json({ error: 'Fingerprint sign-in is not enabled for this account on this device. Please sign in with your password and enable it from your profile.' });
+      }
+
+      const secretMatches = await bcrypt.compare(deviceSecret, device.secret_hash);
+      if (!secretMatches) {
+        return res.status(401).json({ error: 'Biometric verification failed. Please sign in with your password.' });
+      }
+
+      db.biometricDevices.updateLastUsed(user.id, deviceId);
     } else {
       // Password Authentication
       if (!password) {
@@ -346,16 +323,15 @@ app.post('/api/auth/signin', async (req, res) => {
       }
     }
 
-    // Fetch registered fingerprints
-    const rawFingerprints = db.fingerprints.findByUserId(user.id);
-    const fingerprints = rawFingerprints.map(f => ({
-      id: f.id,
-      userId: f.user_id,
-      fingerIndex: f.finger_index,
-      fingerName: f.finger_name,
-      scanQuality: f.scan_quality,
-      enrolledAt: f.enrolled_at,
-      lastVerifiedAt: f.last_verified_at
+    // Fetch registered biometric devices (metadata only, never the secret)
+    const rawDevices = db.biometricDevices.findByUserId(user.id);
+    const fingerprints = rawDevices.map(d => ({
+      id: d.id,
+      userId: d.user_id,
+      deviceId: d.device_id,
+      deviceName: d.device_name,
+      enrolledAt: d.created_at,
+      lastVerifiedAt: d.last_used_at
     }));
 
     const token = jwt.sign(
@@ -389,37 +365,86 @@ app.post('/api/auth/signin', async (req, res) => {
 });
 
 /**
- * POST /api/auth/biometric-verify
- * Standalone biometric verification test endpoint
+ * POST /api/auth/biometric/register
+ * Enable real fingerprint / Face ID sign-in on THIS device for the logged-in citizen.
+ *
+ * The mobile app only calls this after expo-local-authentication has already run a real
+ * OS-level BiometricPrompt / Face ID check against the fingerprint(s)/face already
+ * enrolled in that phone's Settings. On success, the phone generates a random secret,
+ * seals it in the device's secure hardware keystore (Keychain / Android Keystore), and
+ * sends it here once so the server can recognize this specific device next time. We
+ * store only a bcrypt hash of that secret - never a fingerprint, never anything that can
+ * be reversed into one.
  */
-app.post('/api/auth/biometric-verify', async (req, res) => {
+app.post('/api/auth/biometric/register', authenticateToken, async (req, res) => {
   try {
-    const { phone, fingerIndex } = req.body;
-    const cleanPhone = normalizePhone(phone);
-    
-    const user = db.users.findByPhone(cleanPhone);
+    const { deviceId, deviceName, secret } = req.body;
+
+    if (!deviceId || !secret) {
+      return res.status(400).json({ error: 'Missing device information from biometric enrollment.' });
+    }
+
+    const user = db.users.findById(req.user.userId);
     if (!user) {
-      return res.status(404).json({ error: 'Citizen not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    const idx = fingerIndex !== undefined ? fingerIndex : 0;
-    const fp = db.fingerprints.findByUserAndIndex(user.id, idx);
+    const existing = db.biometricDevices.findByUserAndDevice(user.id, deviceId);
+    const secretHash = await bcrypt.hash(secret, 10);
+    const now = new Date().toISOString();
 
-    if (!fp) {
-      return res.status(404).json({ error: 'Fingerprint not registered' });
+    if (existing) {
+      db.biometricDevices.updateSecret(user.id, deviceId, secretHash, deviceName);
+    } else {
+      db.biometricDevices.create({
+        id: `bio_${user.id}_${Date.now()}`,
+        user_id: user.id,
+        device_id: deviceId,
+        device_name: deviceName || 'Unnamed device',
+        secret_hash: secretHash,
+        created_at: now,
+        last_used_at: now
+      });
     }
 
-    db.fingerprints.updateLastVerified(user.id, idx);
-
-    res.json({
-      success: true,
-      verified: true,
-      fingerName: fp.finger_name,
-      quality: fp.scan_quality,
-      verifiedAt: new Date().toISOString()
-    });
+    res.json({ success: true, message: 'Fingerprint sign-in enabled for this device' });
   } catch (error) {
-    console.error('Biometric verify error:', error);
+    console.error('Biometric register error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/auth/biometric/:deviceId
+ * Turn off fingerprint sign-in for a given device.
+ */
+app.delete('/api/auth/biometric/:deviceId', authenticateToken, async (req, res) => {
+  try {
+    const removed = db.biometricDevices.remove(req.user.userId, req.params.deviceId);
+    res.json({ success: true, removed });
+  } catch (error) {
+    console.error('Biometric remove error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/auth/biometric/status/:deviceId
+ * Public check (no auth) so the sign-in screen knows whether to offer the "Sign in with
+ * fingerprint" button for a given phone number + device before the user is logged in.
+ */
+app.get('/api/auth/biometric/status', async (req, res) => {
+  try {
+    const { phone, deviceId } = req.query;
+    const cleanPhone = normalizePhone(phone);
+    const user = db.users.findByPhone(cleanPhone);
+    if (!user || !deviceId) {
+      return res.json({ success: true, enabled: false });
+    }
+    const device = db.biometricDevices.findByUserAndDevice(user.id, deviceId);
+    res.json({ success: true, enabled: !!device });
+  } catch (error) {
+    console.error('Biometric status error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -439,14 +464,13 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User profile not found' });
     }
 
-    const rawFingerprints = db.fingerprints.findByUserId(user.id);
-    const fingerprints = rawFingerprints.map(f => ({
-      id: f.id,
-      fingerIndex: f.finger_index,
-      fingerName: f.finger_name,
-      scanQuality: f.scan_quality,
-      enrolledAt: f.enrolled_at,
-      lastVerifiedAt: f.last_verified_at
+    const rawDevices = db.biometricDevices.findByUserId(user.id);
+    const fingerprints = rawDevices.map(d => ({
+      id: d.id,
+      deviceId: d.device_id,
+      deviceName: d.device_name,
+      enrolledAt: d.created_at,
+      lastVerifiedAt: d.last_used_at
     }));
 
     const docs = db.documents.findByUserId(user.id);
@@ -520,26 +544,23 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/user/fingerprints
- * Get detailed 4-finger biometric tracking records
+ * List devices that have real fingerprint / Face ID sign-in enabled for this citizen.
  */
 app.get('/api/user/fingerprints', authenticateToken, async (req, res) => {
   try {
-    const rawFingerprints = db.fingerprints.findByUserId(req.user.userId);
-    const fingerprints = rawFingerprints.map(f => ({
-      id: f.id,
-      fingerIndex: f.finger_index,
-      fingerName: f.finger_name,
-      scanQuality: f.scan_quality,
-      enrolledAt: f.enrolled_at,
-      lastVerifiedAt: f.last_verified_at,
-      templateHash: f.biometric_template.substring(0, 16) + '...'
+    const rawDevices = db.biometricDevices.findByUserId(req.user.userId);
+    const fingerprints = rawDevices.map(d => ({
+      id: d.id,
+      deviceId: d.device_id,
+      deviceName: d.device_name,
+      enrolledAt: d.created_at,
+      lastVerifiedAt: d.last_used_at
     }));
 
     res.json({
       success: true,
       fingerprints,
-      totalEnrolled: fingerprints.length,
-      status: fingerprints.length === 4 ? 'COMPLETE_ENROLLMENT' : 'PARTIAL_ENROLLMENT'
+      totalEnrolled: fingerprints.length
     });
   } catch (error) {
     console.error('Get fingerprints error:', error);

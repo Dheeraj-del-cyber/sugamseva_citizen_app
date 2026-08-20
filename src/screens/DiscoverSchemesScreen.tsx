@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
-import { mockSchemes } from '../data/mockData';
+import { useData } from '../context/DataContext';
 import { CategoryCard } from '../components/CategoryCard';
 import { SchemeCard } from '../components/SchemeCard';
 import { SchemeCategory } from '../types';
@@ -18,6 +18,7 @@ export const DiscoverSchemesScreen = () => {
     setSelectedCategory,
   } = useAppNavigation();
 
+  const { schemes } = useData();
   const [showSearchInput, setShowSearchInput] = useState(false);
 
   const categories: SchemeCategory[] = [
@@ -39,7 +40,7 @@ export const DiscoverSchemesScreen = () => {
     }
   };
 
-  const filteredSchemes = mockSchemes.filter((scheme) => {
+  const filteredSchemes = schemes.filter((scheme) => {
     const matchesCategory = selectedCategory ? scheme.category === selectedCategory : true;
     const matchesSearch = searchQuery
       ? scheme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

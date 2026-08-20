@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, SafeAreaView, StatusBar, Platform, ActivityIndicator } from 'react-native';
 import { NavigationProvider, useAppNavigation } from './src/navigation/NavigationContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { DataProvider } from './src/context/DataContext';
 import AppHeader from './src/components/AppHeader';
 import BottomNavigation from './src/components/BottomNavigation';
 import HomeScreen from './src/screens/HomeScreen';
@@ -28,7 +29,7 @@ function MainAppOrchestrator() {
     );
   }
 
-  // If citizen is not signed in, show Sign In / Sign Up with 4-Finger Biometrics
+  // If citizen is not signed in, show Sign In / Sign Up
   if (!isAuthenticated) {
     return <AuthScreen />;
   }
@@ -72,7 +73,9 @@ export default function App() {
   return (
     <NavigationProvider>
       <AuthProvider>
-        <MainAppOrchestrator />
+        <DataProvider>
+          <MainAppOrchestrator />
+        </DataProvider>
       </AuthProvider>
     </NavigationProvider>
   );

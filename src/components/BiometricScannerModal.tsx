@@ -7,301 +7,137 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
-  Platform,
-  Vibration
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
-import { useAppNavigation } from '../navigation/NavigationContext';
+import { runOsBiometricPrompt, checkBiometricHardware } from '../services/biometrics';
 
 interface BiometricScannerModalProps {
   visible: boolean;
-  fingerIndex: number;
-  fingerName: string;
+  /** What this scan is for - shown to the person and passed to the OS prompt. */
+  purpose: 'enroll' | 'signin';
+  promptMessage: string;
   onClose: () => void;
-  onScanComplete: (fingerIndex: number, scanData: {
-    fingerName: string;
-    biometricTemplate: string;
-    scanQuality: number;
-    scannedAt: string;
-  }) => void;
-  onScanNext?: () => void;
-  hasNextFinger?: boolean;
+  onResult: (result: { success: boolean; error?: string }) => void;
 }
 
+/**
+ * This modal does NOT scan or store a fingerprint itself - no app can. It calls the
+ * phone's own operating system fingerprint/Face ID prompt (LocalAuthentication) and
+ * simply reflects back whether that real, live OS-level check succeeded.
+ */
 export const BiometricScannerModal: React.FC<BiometricScannerModalProps> = ({
   visible,
-  fingerIndex,
-  fingerName,
+  purpose,
+  promptMessage,
   onClose,
-  onScanComplete,
-  onScanNext,
-  hasNextFinger = false
+  onResult,
 }) => {
-  const { t } = useAppNavigation();
-  const [scanState, setScanState] = useState<'idle' | 'scanning' | 'success'>('idle');
-  const [scanProgress, setScanProgress] = useState<number>(0);
-  const [scanQuality, setScanQuality] = useState<number>(98);
-
-  const scanLineAnim = useRef(new Animated.Value(0)).current;
+  const [state, setState] = useState<'idle' | 'checking' | 'waiting_os' | 'success' | 'error'>('idle');
+  const [errorText, setErrorText] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const successScaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     if (visible) {
-      setScanState('idle');
-      setScanProgress(0);
+      setState('idle');
+      setErrorText(null);
     }
-  }, [visible, fingerIndex]);
+  }, [visible]);
 
-  // Handle Scan Process
-  const startScanning = () => {
-    if (scanState === 'scanning') return;
+  useEffect(() => {
+    if (state === 'waiting_os') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, easing: Easing.ease, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, easing: Easing.ease, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [state]);
 
-    setScanState('scanning');
-    setScanProgress(0);
+  const start = async () => {
+    setState('checking');
+    setErrorText(null);
 
-    // Provide haptic feedback if on mobile
-    if (Platform.OS !== 'web') {
-      try {
-        Vibration.vibrate(50);
-      } catch {}
+    const hw = await checkBiometricHardware();
+    if (!hw.available) {
+      setState('error');
+      setErrorText(hw.reason || 'Fingerprint/Face ID is not available on this device.');
+      return;
     }
 
-    // Laser Beam Animation Loop
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanLineAnim, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scanLineAnim, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    setState('waiting_os');
+    const result = await runOsBiometricPrompt(promptMessage);
 
-    // Pulse Animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.08,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    // Progress increments
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 15;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        completeScan();
-      }
-      setScanProgress(progress);
-    }, 200);
+    if (result.success) {
+      setState('success');
+      onResult({ success: true });
+    } else {
+      setState('error');
+      setErrorText(result.error || 'Fingerprint / Face ID did not match.');
+      onResult({ success: false, error: result.error });
+    }
   };
-
-  const completeScan = () => {
-    scanLineAnim.stopAnimation();
-    pulseAnim.stopAnimation();
-
-    const quality = Math.floor(Math.random() * 4 + 96); // 96-99%
-    setScanQuality(quality);
-    setScanState('success');
-
-    if (Platform.OS !== 'web') {
-      try {
-        Vibration.vibrate([0, 70, 50, 90]);
-      } catch {}
-    }
-
-    Animated.spring(successScaleAnim, {
-      toValue: 1,
-      friction: 4,
-      useNativeDriver: true,
-    }).start();
-
-    const template = `BIO_SHA256_${Date.now()}_F${fingerIndex}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    const scannedAt = new Date().toISOString();
-
-    onScanComplete(fingerIndex, {
-      fingerName,
-      biometricTemplate: template,
-      scanQuality: quality,
-      scannedAt
-    });
-  };
-
-  const translateY = scanLineAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-60, 60],
-  });
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Header */}
           <View style={styles.headerRow}>
-            <View style={styles.headerTitleWrap}>
-              <View style={styles.badgeNumber}>
-                <Text style={styles.badgeNumberText}>{fingerIndex + 1}/4</Text>
-              </View>
-              <Text style={styles.headerTitle}>{fingerName}</Text>
-            </View>
+            <Text style={styles.headerTitle}>
+              {purpose === 'enroll' ? 'Enable Fingerprint Sign-In' : 'Fingerprint Sign-In'}
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={COLORS.textDark} />
             </TouchableOpacity>
           </View>
 
-          {/* Subtitle instructions */}
           <Text style={styles.instructionText}>
-            {scanState === 'idle'
-              ? 'Touch & hold the biometric sensor below to capture fingerprint'
-              : scanState === 'scanning'
-              ? t('scanningFinger')
-              : t('scannerSuccess')}
+            {state === 'idle' &&
+              "This uses your phone's own fingerprint or Face ID sensor. We never see or store your actual fingerprint - only your phone's operating system does that."}
+            {state === 'checking' && 'Checking this device...'}
+            {state === 'waiting_os' && 'Follow the prompt from your phone to scan your fingerprint or face.'}
+            {state === 'success' && 'Verified by your device.'}
+            {state === 'error' && (errorText || 'Something went wrong.')}
           </Text>
 
-          {/* Biometric Hologram Sensor */}
           <View style={styles.sensorContainer}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={startScanning}
-              disabled={scanState === 'scanning' || scanState === 'success'}
-              style={[
-                styles.sensorCircle,
-                scanState === 'scanning' && styles.sensorCircleScanning,
-                scanState === 'success' && styles.sensorCircleSuccess,
-              ]}
-            >
-              <Animated.View
-                style={[
-                  styles.scannerVisual,
-                  { transform: [{ scale: pulseAnim }] }
-                ]}
-              >
-                {/* Fingerprint Graphic */}
-                <MaterialCommunityIcons
-                  name="fingerprint"
-                  size={90}
-                  color={
-                    scanState === 'success'
-                      ? '#10B981'
-                      : scanState === 'scanning'
-                      ? COLORS.primary
-                      : '#94A3B8'
-                  }
-                />
-
-                {/* Laser Scanning Bar */}
-                {scanState === 'scanning' && (
-                  <Animated.View
-                    style={[
-                      styles.laserLine,
-                      { transform: [{ translateY }] }
-                    ]}
-                  />
-                )}
-
-                {/* Success Check Icon */}
-                {scanState === 'success' && (
-                  <View style={styles.successIconOverlay}>
-                    <Ionicons name="checkmark-circle" size={36} color="#10B981" />
-                  </View>
-                )}
-              </Animated.View>
-            </TouchableOpacity>
-
-            {/* Live Progress Bar */}
-            {scanState === 'scanning' && (
-              <View style={styles.progressBarWrap}>
-                <View style={styles.progressBarBg}>
-                  <View style={[styles.progressBarFill, { width: `${scanProgress}%` }]} />
+            <Animated.View style={[styles.sensorCircle, state === 'error' && styles.sensorCircleError, state === 'success' && styles.sensorCircleSuccess, { transform: [{ scale: pulseAnim }] }]}>
+              <MaterialCommunityIcons
+                name="fingerprint"
+                size={90}
+                color={state === 'success' ? '#10B981' : state === 'error' ? '#DC2626' : state === 'waiting_os' ? COLORS.primary : '#94A3B8'}
+              />
+              {state === 'success' && (
+                <View style={styles.successIconOverlay}>
+                  <Ionicons name="checkmark-circle" size={36} color="#10B981" />
                 </View>
-                <Text style={styles.progressText}>{scanProgress}% Extracted</Text>
-              </View>
-            )}
-
-            {/* Quality Score Badge */}
-            {scanState === 'success' && (
-              <View style={styles.qualityCard}>
-                <Ionicons name="shield-checkmark" size={20} color="#10B981" />
-                <View style={styles.qualityInfo}>
-                  <Text style={styles.qualityTitle}>{t('biometricQuality')}: {scanQuality}%</Text>
-                  <Text style={styles.qualitySub}>SHA-256 Biometric Hash Generated</Text>
-                </View>
-              </View>
-            )}
+              )}
+            </Animated.View>
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.actionsRow}>
-            {scanState === 'idle' && (
-              <TouchableOpacity
-                onPress={startScanning}
-                style={styles.primaryModalBtn}
-                activeOpacity={0.8}
-              >
+            {(state === 'idle' || state === 'error') && (
+              <TouchableOpacity onPress={start} style={styles.primaryModalBtn} activeOpacity={0.8}>
                 <Ionicons name="finger-print" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
-                <Text style={styles.primaryModalBtnText}>Tap to Scan {fingerName}</Text>
+                <Text style={styles.primaryModalBtnText}>
+                  {state === 'error' ? 'Try Again' : 'Use Device Fingerprint / Face ID'}
+                </Text>
               </TouchableOpacity>
             )}
-
-            {scanState === 'scanning' && (
+            {(state === 'checking' || state === 'waiting_os') && (
               <View style={styles.scanningStatusBtn}>
-                <Text style={styles.scanningStatusText}>Acquiring Biometric Ridge Points...</Text>
+                <Text style={styles.scanningStatusText}>Waiting for your device...</Text>
               </View>
             )}
-
-            {scanState === 'success' && (
-              <View style={styles.successActions}>
-                {hasNextFinger && onScanNext ? (
-                  <TouchableOpacity
-                    onPress={onScanNext}
-                    style={styles.primaryModalBtn}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.primaryModalBtnText}>{t('autoScanNext')} →</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={onClose}
-                    style={styles.primaryModalBtn}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="checkmark-done" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
-                    <Text style={styles.primaryModalBtnText}>{t('finishScan')}</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  onPress={startScanning}
-                  style={styles.rescanBtn}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.rescanBtnText}>{t('rescanFinger')}</Text>
-                </TouchableOpacity>
-              </View>
+            {state === 'success' && (
+              <TouchableOpacity onPress={onClose} style={styles.primaryModalBtn} activeOpacity={0.8}>
+                <Ionicons name="checkmark-done" size={20} color={COLORS.white} style={{ marginRight: 6 }} />
+                <Text style={styles.primaryModalBtnText}>Done</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -337,24 +173,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
-  },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badgeNumber: {
-    backgroundColor: COLORS.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: COLORS.lightBorder,
-  },
-  badgeNumberText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.primary,
   },
   headerTitle: {
     fontSize: 18,
@@ -392,31 +210,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  sensorCircleScanning: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#F0FDF4',
+  sensorCircleError: {
+    borderColor: '#DC2626',
+    backgroundColor: '#FEF2F2',
   },
   sensorCircleSuccess: {
     borderColor: '#10B981',
     backgroundColor: '#ECFDF5',
-  },
-  scannerVisual: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-  },
-  laserLine: {
-    position: 'absolute',
-    width: 130,
-    height: 3,
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
   },
   successIconOverlay: {
     position: 'absolute',
@@ -424,54 +224,6 @@ const styles = StyleSheet.create({
     right: 12,
     backgroundColor: COLORS.white,
     borderRadius: 18,
-  },
-  progressBarWrap: {
-    width: '80%',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  progressBarBg: {
-    width: '100%',
-    height: 6,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  qualityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginTop: 16,
-    width: '100%',
-  },
-  qualityInfo: {
-    marginLeft: 10,
-  },
-  qualityTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#065F46',
-  },
-  qualitySub: {
-    fontSize: 11,
-    color: '#047857',
-    marginTop: 1,
   },
   actionsRow: {
     width: '100%',
@@ -501,19 +253,6 @@ const styles = StyleSheet.create({
   scanningStatusText: {
     color: COLORS.primary,
     fontSize: 13,
-    fontWeight: '600',
-  },
-  successActions: {
-    width: '100%',
-  },
-  rescanBtn: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  rescanBtnText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
     fontWeight: '600',
   },
 });

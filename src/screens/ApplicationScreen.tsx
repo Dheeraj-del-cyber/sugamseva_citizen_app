@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { ProgressStepper } from '../components/ProgressStepper';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { mockSchemes } from '../data/mockData';
+import { useData } from '../context/DataContext';
 
 export const ApplicationScreen = () => {
   const { t, pushScreen, popScreen, setTab, currentScreen } = useAppNavigation();
+  const { schemes, submitApplication } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const schemeId = currentScreen.params?.schemeId || 'pm-kisan';
-  const scheme = mockSchemes.find((s) => s.id === schemeId) || mockSchemes[0];
+  const scheme = schemes.find((s) => s.id === schemeId) || schemes[0];
 
   const steps = [
     { title: 'Personal Details', status: 'Completed' as const },
@@ -20,20 +22,21 @@ export const ApplicationScreen = () => {
     { title: 'Review & Submit', status: 'In Progress' as const },
   ];
 
-  const handleReview = () => {
-    // Navigate to Track Application screen
-    Alert.alert(
-      "Application Submitted",
-      "Your application has been submitted and is under review.",
-      [
-        {
-          text: "Track Application",
-          onPress: () => {
-            setTab('Track');
-          }
-        }
-      ]
-    );
+  const handleReview = async () => {
+    if (!scheme) return;
+    setIsSubmitting(true);
+    const result = await submitApplication(scheme.id, scheme.name);
+    setIsSubmitting(false);
+
+    if (result) {
+      Alert.alert(
+        "Application Submitted",
+        `Your application (${result.id}) has been submitted and is under review.`,
+        [{ text: "Track Application", onPress: () => setTab('Track') }]
+      );
+    } else {
+      Alert.alert("Submission Failed", "We couldn't submit your application. Please check your connection and try again.");
+    }
   };
 
   const handleExit = () => {
@@ -78,8 +81,9 @@ export const ApplicationScreen = () => {
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <PrimaryButton
-          title={t('reviewApp')}
+          title={isSubmitting ? 'Submitting...' : t('reviewApp')}
           onPress={handleReview}
+          disabled={isSubmitting}
           style={styles.primaryBtn}
         />
         <PrimaryButton

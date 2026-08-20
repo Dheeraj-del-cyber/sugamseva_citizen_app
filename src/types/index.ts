@@ -10,25 +10,16 @@ export interface User {
   fingerprintsCount?: number;
 }
 
+// Represents a device that has real OS-level fingerprint/Face ID sign-in enabled.
+// We never store the fingerprint itself - only metadata about which device was
+// approved after the phone's own biometric sensor confirmed a real match.
 export interface FingerprintRecord {
   id: string;
   userId?: string;
-  fingerIndex: number; // 0: Right Thumb, 1: Right Index, 2: Left Thumb, 3: Left Index
-  fingerName: string;
-  scanQuality: number;
+  deviceId: string;
+  deviceName: string;
   enrolledAt: string;
   lastVerifiedAt?: string;
-  templateHash?: string;
-}
-
-export interface FingerprintEnrollmentData {
-  fingerIndex: number;
-  fingerName: string;
-  fingerLabelKey?: string;
-  biometricTemplate?: string;
-  scanQuality?: number;
-  isScanned: boolean;
-  scannedAt?: string;
 }
 
 export interface AuthResponse {

@@ -4,42 +4,48 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useAuth } from '../context/AuthContext';
-import { mockSchemes } from '../data/mockData';
+import { useData } from '../context/DataContext';
 import { SchemeCard } from '../components/SchemeCard';
 
 export const HomeScreen = () => {
   const { t, setVoiceAssistantVisible, pushScreen, setTab } = useAppNavigation();
   const { user } = useAuth();
+  const { schemes, applications, documents } = useData();
 
-  // Find PM-KISAN to display as recommended
-  const recommendedScheme = mockSchemes.find((s) => s.id === 'pm-kisan') || mockSchemes[0];
+  // Find PM-KISAN to display as recommended, falling back to whatever loaded first
+  const recommendedScheme = schemes.find((s) => s.id === 'pm-kisan') || schemes[0];
 
   // Dynamic Citizen Display Name
   const citizenFirstName = user?.name ? user.name.split(' ')[0] : t('defaultCitizenName');
+
+  // Every number below is computed from real data returned by the server, not made up.
+  const eligibleCount = schemes.filter(s => s.isEligible).length;
+  const inProgressCount = applications.filter(a => a.status !== 'Approved' && a.status !== 'Benefits Disbursed').length;
+  const verifiedDocsCount = documents.filter(d => d.status === 'Verified').length;
 
   const stats = [
     {
       icon: 'sparkles',
       label: t('eligibleSchemes'),
-      value: '5',
+      value: String(eligibleCount),
       color: COLORS.primary,
     },
     {
-      icon: 'trophy',
-      label: t('benefitsScore'),
-      value: '78',
+      icon: 'shield-checkmark',
+      label: 'Verified Documents',
+      value: String(verifiedDocsCount),
       color: '#0891B2',
     },
     {
       icon: 'document-text',
       label: t('inProgress'),
-      value: '1',
+      value: String(inProgressCount),
       color: COLORS.warning,
     },
     {
       icon: 'language',
       label: t('languagesCount'),
-      value: '10+',
+      value: '3',
       color: '#8B5CF6',
     },
   ];
@@ -92,10 +98,12 @@ export const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <SchemeCard
-        scheme={recommendedScheme}
-        onPressDetails={() => pushScreen('Details', { schemeId: recommendedScheme.id })}
-      />
+      {recommendedScheme && (
+        <SchemeCard
+          scheme={recommendedScheme}
+          onPressDetails={() => pushScreen('Details', { schemeId: recommendedScheme.id })}
+        />
+      )}
     </ScrollView>
   );
 };

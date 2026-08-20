@@ -15,16 +15,61 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useAuth } from '../context/AuthContext';
+import { BiometricScannerModal } from '../components/BiometricScannerModal';
 
 export const ProfileScreen = () => {
   const { t, activeLanguage, setLanguage, pushScreen, setTab, resetNavigation } = useAppNavigation();
-  const { user, fingerprints, logout, updateProfile, isLoading } = useAuth();
+  const {
+    user,
+    fingerprints,
+    logout,
+    updateProfile,
+    isLoading,
+    biometricAvailableOnThisDevice,
+    biometricEnabledOnThisDevice,
+    enableBiometricSignIn,
+    disableBiometricSignIn,
+  } = useAuth();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [showBiometricsDetails, setShowBiometricsDetails] = useState(false);
+  const [biometricScannerVisible, setBiometricScannerVisible] = useState(false);
+
+  const handleToggleBiometric = () => {
+    if (biometricEnabledOnThisDevice) {
+      Alert.alert(
+        'Turn off fingerprint sign-in?',
+        "You'll only be able to sign in with your password on this device.",
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: 'Turn Off', style: 'destructive', onPress: () => disableBiometricSignIn() },
+        ]
+      );
+      return;
+    }
+
+    if (!biometricAvailableOnThisDevice) {
+      Alert.alert('Not Available', 'This device has no fingerprint sensor or Face ID enrolled in its Settings yet.');
+      return;
+    }
+
+    setBiometricScannerVisible(true);
+  };
+
+  const handleBiometricEnrollResult = async (result: { success: boolean; error?: string }) => {
+    if (result.success) {
+      const res = await enableBiometricSignIn();
+      setBiometricScannerVisible(false);
+      if (!res.success) {
+        Alert.alert('Could not enable fingerprint sign-in', res.error || 'Please try again.');
+      }
+    } else {
+      setBiometricScannerVisible(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -158,7 +203,7 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 4-Finger Biometric Registry Status Card */}
+      {/* Real Fingerprint / Face ID Sign-In Card */}
       <View style={styles.biometricRegistryCard}>
         <TouchableOpacity
           onPress={() => setShowBiometricsDetails(!showBiometricsDetails)}
@@ -170,12 +215,18 @@ export const ProfileScreen = () => {
           </View>
           <View style={styles.bioInfoText}>
             <View style={styles.bioTitleRow}>
-              <Text style={styles.bioCardTitle}>{t('biometricRegistryTitle')}</Text>
-              <View style={styles.bioActiveBadge}>
-                <Text style={styles.bioActiveText}>4/4 Enrolled</Text>
+              <Text style={styles.bioCardTitle}>Fingerprint / Face ID Sign-In</Text>
+              <View style={[styles.bioActiveBadge, !biometricEnabledOnThisDevice && styles.bioInactiveBadge]}>
+                <Text style={[styles.bioActiveText, !biometricEnabledOnThisDevice && styles.bioInactiveText]}>
+                  {biometricEnabledOnThisDevice ? 'On for this device' : 'Off for this device'}
+                </Text>
               </View>
             </View>
-            <Text style={styles.bioCardSub}>{t('biometricStatusActive')}</Text>
+            <Text style={styles.bioCardSub}>
+              {fingerprints.length > 0
+                ? `${fingerprints.length} device${fingerprints.length > 1 ? 's' : ''} enrolled`
+                : 'Uses your phone\'s own sensor - we never store the print itself'}
+            </Text>
           </View>
           <Ionicons
             name={showBiometricsDetails ? "chevron-up" : "chevron-down"}
@@ -184,37 +235,57 @@ export const ProfileScreen = () => {
           />
         </TouchableOpacity>
 
-        {/* Expandable Fingerprints Detail List */}
         {showBiometricsDetails && (
           <View style={styles.bioDetailList}>
             <View style={styles.bioDivider} />
-            {(fingerprints && fingerprints.length > 0 ? fingerprints : [
-              { fingerIndex: 0, fingerName: 'Right Thumb', scanQuality: 98, enrolledAt: 'Enrolled & Verified' },
-              { fingerIndex: 1, fingerName: 'Right Index', scanQuality: 97, enrolledAt: 'Enrolled & Verified' },
-              { fingerIndex: 2, fingerName: 'Left Thumb', scanQuality: 96, enrolledAt: 'Enrolled & Verified' },
-              { fingerIndex: 3, fingerName: 'Left Index', scanQuality: 99, enrolledAt: 'Enrolled & Verified' },
-            ]).map((fp, idx) => (
-              <View key={idx} style={styles.fingerprintRow}>
-                <View style={styles.fpLeft}>
-                  <View style={styles.fpMiniIcon}>
-                    <MaterialCommunityIcons name="fingerprint" size={18} color="#059669" />
+
+            {fingerprints.length === 0 ? (
+              <Text style={styles.bioEmptyText}>No devices have fingerprint sign-in enabled yet.</Text>
+            ) : (
+              fingerprints.map((fp) => (
+                <View key={fp.id} style={styles.fingerprintRow}>
+                  <View style={styles.fpLeft}>
+                    <View style={styles.fpMiniIcon}>
+                      <MaterialCommunityIcons name="cellphone" size={18} color="#059669" />
+                    </View>
+                    <View>
+                      <Text style={styles.fpName}>{fp.deviceName}</Text>
+                      <Text style={styles.fpMeta}>
+                        Last used {fp.lastVerifiedAt ? new Date(fp.lastVerifiedAt).toLocaleDateString() : '—'}
+                      </Text>
+                    </View>
                   </View>
-                  <View>
-                    <Text style={styles.fpName}>{fp.fingerName}</Text>
-                    <Text style={styles.fpMeta}>SHA-256 Registered Biometric</Text>
-                  </View>
+                  <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                 </View>
-                <View style={styles.fpRight}>
-                  <View style={styles.fpQualityBadge}>
-                    <Text style={styles.fpQualityText}>{fp.scanQuality}% Quality</Text>
-                  </View>
-                  <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginLeft: 6 }} />
-                </View>
-              </View>
-            ))}
+              ))
+            )}
+
+            <TouchableOpacity
+              onPress={handleToggleBiometric}
+              disabled={isLoading}
+              style={[styles.bioToggleBtn, biometricEnabledOnThisDevice && styles.bioToggleBtnOff]}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="fingerprint"
+                size={18}
+                color={biometricEnabledOnThisDevice ? '#DC2626' : COLORS.white}
+              />
+              <Text style={[styles.bioToggleBtnText, biometricEnabledOnThisDevice && styles.bioToggleBtnTextOff]}>
+                {biometricEnabledOnThisDevice ? 'Turn Off on This Device' : 'Enable on This Device'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
+
+      <BiometricScannerModal
+        visible={biometricScannerVisible}
+        purpose="enroll"
+        promptMessage="Confirm your fingerprint to enable fingerprint sign-in"
+        onClose={() => setBiometricScannerVisible(false)}
+        onResult={handleBiometricEnrollResult}
+      />
 
       {/* Settings Options List */}
       <View style={styles.optionsCard}>
@@ -452,6 +523,40 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: '#15803D',
+  },
+  bioInactiveBadge: {
+    backgroundColor: '#F1F5F9',
+  },
+  bioInactiveText: {
+    color: '#64748B',
+  },
+  bioEmptyText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    paddingVertical: 8,
+  },
+  bioToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 10,
+  },
+  bioToggleBtnOff: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  bioToggleBtnText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  bioToggleBtnTextOff: {
+    color: '#DC2626',
   },
   bioCardSub: {
     fontSize: 11,
