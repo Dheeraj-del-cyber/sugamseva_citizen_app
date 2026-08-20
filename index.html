@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sugam Seva – Citizen Document Services</title>
+    <meta name="description" content="Sugam Seva is a secure, trusted platform for managing your personal government documents. Upload, store and reuse your Aadhaar, PAN, Passport and more.">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- App Header -->
+    <header class="app-header" role="banner">
+        <div class="container header-inner">
+            <div class="logo-block">
+                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="logo-text">Sugam Seva</span>
+            </div>
+            <div class="header-controls">
+                <!-- Language Selector -->
+                <div class="lang-selector" id="lang-selector-wrap">
+                    <button class="lang-btn" id="lang-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Select language" title="Change language">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span id="lang-current-label">EN</span>
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <ul class="lang-dropdown" id="lang-dropdown" role="listbox" aria-label="Available languages">
+                        <!-- Options injected by JS -->
+                    </ul>
+                </div>
+                <nav id="main-nav" aria-label="Main navigation"></nav>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-container">
+
+        <!-- =================== AUTH VIEW =================== -->
+        <section id="auth-view" class="view" role="main" aria-labelledby="auth-title">
+            <div class="auth-wrapper">
+                <div class="auth-brand">
+                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <h1 id="auth-title" class="auth-heading">Sign In</h1>
+                    <p id="auth-subtitle" class="auth-sub">Access your citizen documents securely.</p>
+                </div>
+
+                <div id="form-error" class="form-error hidden" role="alert"></div>
+
+                <form id="auth-form" novalidate>
+                    <!-- Fields injected by JS -->
+                </form>
+
+                <div class="auth-footer">
+                    <button type="button" id="toggle-auth-btn" class="text-link"></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================== BIOMETRIC SETUP VIEW =================== -->
+        <section id="biometric-view" class="view hidden" role="main">
+            <div class="auth-wrapper text-center">
+                <div class="biometric-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 2C9 2 6.5 3.5 5 6"/>
+                        <path d="M12 22c3 0 5.5-1.5 7-4"/>
+                        <path d="M5 6a7 7 0 0 0 0 10"/>
+                        <path d="M19 6a7 7 0 0 1 0 10"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 9v0a6 6 0 0 0 0 6"/>
+                    </svg>
+                </div>
+                <h2 data-i18n="bioTitle">Secure Your Account</h2>
+                <p class="biometric-desc" data-i18n="bioDesc">Enable device security (Passkey / Biometric) for faster and safer logins in the future. Your biometric data stays on your device and is never shared.</p>
+                <button type="button" id="enable-biometric-btn" class="btn btn-primary btn-block" data-i18n="enableBio">Enable Device Security</button>
+                <button type="button" id="skip-biometric-btn" class="btn btn-ghost btn-block" data-i18n="skipBio">Skip for Now</button>
+            </div>
+        </section>
+
+        <!-- =================== DASHBOARD VIEW =================== -->
+        <section id="dashboard-view" class="view hidden" role="main" aria-labelledby="dashboard-title">
+            <div class="container">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 id="dashboard-title" data-i18n="myDocuments">My Documents</h2>
+                        <p class="text-muted" id="dashboard-sub" data-i18n="dashSubtitle">Your verified identity documents, stored securely.</p>
+                    </div>
+                    <button id="add-document-btn" class="btn btn-primary" aria-label="Add a new document" data-i18n="addDocument" data-i18n-attr="">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span data-i18n="addDocument">Add Document</span>
+                    </button>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="filter-bar" id="filter-bar" aria-label="Filter documents">
+                    <button class="filter-chip active" data-filter="all" data-i18n="filterAll">All</button>
+                    <button class="filter-chip" data-filter="Aadhaar Card" data-i18n="filterAadhaar">Aadhaar</button>
+                    <button class="filter-chip" data-filter="PAN Card" data-i18n="filterPan">PAN</button>
+                    <button class="filter-chip" data-filter="Passport" data-i18n="filterPassport">Passport</button>
+                    <button class="filter-chip" data-filter="Driving Licence" data-i18n="filterLicence">Licence</button>
+                    <button class="filter-chip" data-filter="Voter ID" data-i18n="filterVoterID">Voter ID</button>
+                </div>
+
+                <div id="document-grid" class="document-grid" aria-live="polite">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- =================== ADD DOCUMENT MODAL =================== -->
+        <div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-overlay" id="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title" data-i18n="addDocTitle">Add Document</h3>
+                    <button id="close-modal-btn" class="close-btn" aria-label="Close modal">&times;</button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Step 1: Select type -->
+                    <div id="step-type" class="modal-step">
+                        <div class="form-group">
+                            <label for="doc-type" data-i18n="docTypeLabel">Document Type</label>
+                            <select id="doc-type" class="form-control">
+                                <option value="" data-i18n="docTypePh">— Select document type —</option>
+                                <option value="Aadhaar Card" data-i18n="dtAadhaar">Aadhaar Card</option>
+                                <option value="PAN Card" data-i18n="dtPAN">PAN Card</option>
+                                <option value="Driving Licence" data-i18n="dtDriving">Driving Licence</option>
+                                <option value="Voter ID" data-i18n="dtVoter">Voter ID</option>
+                                <option value="Passport" data-i18n="dtPassport">Passport</option>
+                                <option value="Income Certificate" data-i18n="dtIncome">Income Certificate</option>
+                                <option value="Education Certificate" data-i18n="dtEducation">Education Certificate</option>
+                                <option value="Other" data-i18n="dtOther">Other</option>
+                            </select>
+                        </div>
+                        <div id="upload-options" class="upload-options hidden">
+                            <p class="options-label" data-i18n="optionsLabel">How would you like to add this document?</p>
+                            <button class="upload-opt-btn" id="opt-gallery">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <span data-i18n="optGallery">Gallery / File Picker</span>
+                            </button>
+                            <button class="upload-opt-btn" id="opt-camera">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                <span data-i18n="optCamera">Camera Capture</span>
+                            </button>
+                            <button class="upload-opt-btn" id="opt-digilocker">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span data-i18n="optDigiLocker">Connect DigiLocker</span>
+                            </button>
+                        </div>
+                        <!-- Hidden file input -->
+                        <input type="file" id="file-input" class="hidden" accept="image/*,.pdf">
+                    </div>
+
+                    <!-- Step 2: Camera -->
+                    <div id="step-camera" class="modal-step hidden">
+                        <p class="step-label" data-i18n="cameraLabel">Position your document clearly within the frame.</p>
+                        <div class="camera-wrapper">
+                            <video id="camera-stream" autoplay playsinline muted></video>
+                        </div>
+                        <div class="preview-actions mt-16">
+                            <button id="capture-btn" class="btn btn-primary btn-block" data-i18n="capture">Capture</button>
+                            <button id="cancel-camera-btn" class="btn btn-ghost btn-block" data-i18n="cancelCamera">Cancel</button>
+                        </div>
+                        <canvas id="capture-canvas" class="hidden"></canvas>
+                    </div>
+
+                    <!-- Step 3: Preview -->
+                    <div id="step-preview" class="modal-step hidden">
+                        <p class="step-label" data-i18n="previewLabel">Review your document before saving.</p>
+                        <div class="preview-wrap">
+                            <img id="image-preview" src="" alt="Document preview">
+                        </div>
+                        <div class="preview-actions mt-16">
+                            <button id="retake-btn" class="btn btn-secondary" data-i18n="retake">Retake / Replace</button>
+                            <button id="save-doc-btn" class="btn btn-primary" data-i18n="saveDoc">Save Document</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3b: DigiLocker Connect -->
+                    <div id="step-digilocker" class="modal-step hidden">
+                        <div class="digilocker-panel">
+                            <div class="digilocker-logo">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span data-i18n="digiLockerTitle">DigiLocker</span>
+                            </div>
+                            <p data-i18n="digiLockerDesc">You will be redirected to DigiLocker to authorize access to your documents. This is a government service and your credentials are handled only by DigiLocker.</p>
+                            <div class="digilocker-notice">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <span data-i18n="digiLockerNotice">This is the connection interface. Real DigiLocker API integration requires official onboarding.</span>
+                            </div>
+                            <button class="btn btn-primary btn-block" id="digilocker-connect-btn" data-i18n="digiLockerConnect">Connect with DigiLocker</button>
+                            <button class="btn btn-ghost btn-block" id="digilocker-cancel-btn" data-i18n="digiLockerCancel">Cancel</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== DOCUMENT VIEW MODAL =================== -->
+        <div id="view-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+            <div class="modal-overlay" id="view-modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="view-modal-title">Document</h3>
+                    <button id="close-view-modal-btn" class="close-btn" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="view-modal-img" src="" alt="Document" class="view-modal-img">
+                    <p id="view-modal-date" class="text-muted" style="margin-top:12px; font-size:0.85rem;"></p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+        <div class="container footer-inner">
+            <p data-i18n="footerCopy">© 2026 Sugam Seva · A public service initiative</p>
+            <p class="text-muted" data-i18n="footerNote">Documents are stored locally on your device for this prototype.</p>
+        </div>
+    </footer>
+
+    <script src="js/bhashini.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
