@@ -9,7 +9,8 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -18,7 +19,8 @@ import { useAuth } from '../context/AuthContext';
 import { BiometricScannerModal } from '../components/BiometricScannerModal';
 
 export const ProfileScreen = () => {
-  const { t, activeLanguage, setLanguage, pushScreen, setTab, resetNavigation } = useAppNavigation();
+  const { t, activeLanguage, setLanguage, languages, translationsLoading, pushScreen, setTab, resetNavigation } = useAppNavigation();
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const {
     user,
     fingerprints,
@@ -109,14 +111,9 @@ export const ProfileScreen = () => {
   };
 
   const getLanguageName = () => {
-    switch (activeLanguage) {
-      case 'kn':
-        return 'ಕನ್ನಡ (Kannada)';
-      case 'hi':
-        return 'हिन्दी (Hindi)';
-      default:
-        return 'English';
-    }
+    const lang = languages.find((l) => l.code === activeLanguage);
+    if (!lang) return activeLanguage;
+    return lang.code === 'en' ? lang.name : `${lang.nativeName} (${lang.name})`;
   };
 
   const menuOptions = [
@@ -124,11 +121,7 @@ export const ProfileScreen = () => {
       icon: 'language-outline',
       label: t('languageOpt'),
       rightText: getLanguageName(),
-      onPress: () => {
-        if (activeLanguage === 'en') setLanguage('kn');
-        else if (activeLanguage === 'kn') setLanguage('hi');
-        else setLanguage('en');
-      }
+      onPress: () => setLanguageModalVisible(true)
     },
     {
       icon: 'folder-open-outline',
@@ -395,6 +388,62 @@ export const ProfileScreen = () => {
                 )}
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, styles.languageModalCard]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('languageOpt')}</Text>
+              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                <Ionicons name="close" size={22} color={COLORS.textDark} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={languages}
+              keyExtractor={(item) => item.code}
+              style={styles.languageList}
+              renderItem={({ item }) => {
+                const isActive = item.code === activeLanguage;
+                return (
+                  <TouchableOpacity
+                    style={[styles.languageRow, isActive && styles.languageRowActive]}
+                    onPress={() => {
+                      setLanguage(item.code);
+                      setLanguageModalVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.languageNative, isActive && styles.languageTextActive]}>
+                        {item.nativeName}
+                      </Text>
+                      <Text style={[styles.languageEnglish, isActive && styles.languageTextActive]}>
+                        {item.name}
+                      </Text>
+                    </View>
+                    {isActive && (
+                      <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+
+            {translationsLoading && (
+              <View style={styles.languageLoadingRow}>
+                <ActivityIndicator color={COLORS.primary} />
+                <Text style={styles.languageLoadingText}>Translating…</Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -715,6 +764,48 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     marginBottom: 20,
+  },
+  languageModalCard: {
+    maxHeight: '75%',
+  },
+  languageList: {
+    maxHeight: 380,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  languageRowActive: {
+    backgroundColor: COLORS.primaryLight,
+  },
+  languageNative: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textDark,
+  },
+  languageEnglish: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  languageTextActive: {
+    color: COLORS.primary,
+  },
+  languageLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    gap: 8,
+  },
+  languageLoadingText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
   },
   modalInputGroup: {
     marginBottom: 14,

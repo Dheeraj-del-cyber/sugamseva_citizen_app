@@ -217,5 +217,19 @@ export const api = {
   // Citizen Documents
   getDocuments: async (): Promise<{ success: boolean; documents: CitizenDocument[] }> => {
     return await request('/documents');
+  },
+
+  // Languages available for translation
+  getLanguages: async (): Promise<{ success: boolean; languages: { code: string; name: string; nativeName: string }[] }> => {
+    return await request('/languages');
+  },
+
+  // Translate a batch of English source strings into targetLang.
+  // Server caches results, so repeat calls for the same strings/language are free.
+  translateBatch: async (texts: string[], targetLang: string): Promise<{ success: boolean; targetLang: string; translations: string[] }> => {
+    return await request('/translate', {
+      method: 'POST',
+      body: JSON.stringify({ texts, targetLang }),
+    });
   }
 };

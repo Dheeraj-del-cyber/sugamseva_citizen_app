@@ -77,4 +77,13 @@ export interface CitizenDocument {
   docNumber?: string;
 }
 
-export type AppLanguage = 'en' | 'kn' | 'hi';
+// Language is now an open ISO 639-1 code (e.g. 'en', 'hi', 'ta', 'te', ...)
+// resolved dynamically against whatever the backend's /api/languages
+// endpoint reports as supported, rather than a fixed hardcoded union.
+export type AppLanguage = string;
+
+export interface LanguageOption {
+  code: AppLanguage;
+  name: string;
+  nativeName: string;
+}
