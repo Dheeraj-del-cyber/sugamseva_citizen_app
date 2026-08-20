@@ -10,7 +10,9 @@ export type ScreenName =
   | 'Track' 
   | 'Profile'
   | 'DigiLocker'
-  | 'Auth';
+  | 'Auth'
+  | 'Documents'
+  | 'DocumentCapture';
 
 interface ScreenState {
   name: ScreenName;

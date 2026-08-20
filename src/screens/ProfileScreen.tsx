@@ -133,8 +133,7 @@ export const ProfileScreen = () => {
     {
       icon: 'folder-open-outline',
       label: t('myDocuments'),
-      rightText: 'DigiLocker',
-      onPress: () => pushScreen('DigiLocker')
+      onPress: () => pushScreen('Documents')
     },
     {
       icon: 'document-text-outline',
