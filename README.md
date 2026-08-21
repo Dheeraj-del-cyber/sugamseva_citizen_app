@@ -60,6 +60,7 @@
 - Automatic extraction of personal details (name, DOB, address, ID numbers) from uploaded documents
 - Document protection with a 4-digit PIN
 - Blur/thumbnail previews for privacy
+- **"Where can I get it?" helper** — when selecting a document type in the upload modal, citizens can tap "Where can I get it?" to see the document name, a short explanation, and the official government website where they can apply. For state-dependent documents (Income Certificate, Birth Certificate, Ration Card, EWS Certificate), the link automatically points to the user's state portal if their state is set in their profile. Covers 10 document types: Aadhaar, PAN, Driving Licence, Voter ID, Passport, Income Certificate, Education Certificate, Birth Certificate, Disability Certificate (UDID), Ration Card, and EWS Certificate.
 
 ### 🏛️ Government Scheme Discovery
 - Personalised scheme recommendations based on user profile and uploaded documents
