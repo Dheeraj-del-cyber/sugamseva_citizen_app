@@ -55,7 +55,7 @@
 ## ✨ Features
 
 ### 📄 Document Management
-- Upload documents via gallery, camera capture, or DigiLocker connection
+- Upload documents via gallery, camera capture, or a DigiLocker connection placeholder
 - OCR-powered document verification using Tesseract.js
 - Automatic extraction of personal details (name, DOB, address, ID numbers) from uploaded documents
 - Document protection with a 4-digit PIN
@@ -80,7 +80,7 @@
 ### 🎨 User Experience
 - Indian tricolour accent bar and emerald green design theme
 - Responsive mobile-first layout
-- Biometric/passkey setup prompt (WebAuthn)
+- Biometric/passkey setup prompt (WebAuthn-ready prototype flow)
 - Profile management with auto-populated fields from OCR
 - National anthem player in the footer
 
@@ -95,7 +95,7 @@
 | **Frontend** | Vanilla HTML, CSS, JavaScript (no framework) | ![HTML5](https://img.shields.io/badge/-HTML5-E34F26?style=flat-square&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/-CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) |
 | **Backend** | Node.js 20+, Express 5 | ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=node.js&logoColor=white) ![Express](https://img.shields.io/badge/-Express-000000?style=flat-square&logo=express&logoColor=white) |
 | **Database** | PostgreSQL 14+ | ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
-| **OCR** | Tesseract.js 5 (client-side) | ![Tesseract](https://img.shields.io/badge/-Tesseract.js-4285F4?style=flat-square&logo=google&logoColor=white) |
+| **OCR** | Tesseract.js 7 (client-side package; browser CDN is pinned in `index.html`) | ![Tesseract](https://img.shields.io/badge/-Tesseract.js-4285F4?style=flat-square&logo=google&logoColor=white) |
 | **AI Chat** | Groq API (Qwen 3.6-27B) | ![Groq](https://img.shields.io/badge/-Groq-F55036?style=flat-square&logo=lightning&logoColor=white) |
 | **Fonts** | Google Fonts (Outfit + Inter) | ![Google Fonts](https://img.shields.io/badge/-Google_Fonts-4285F4?style=flat-square&logo=googlefonts&logoColor=white) |
 
@@ -117,7 +117,7 @@
 npm install
 ```
 
-**2. Copy `.env.example` to `.env` and configure:**
+**2. Copy `.env.example` to `.env` and configure PostgreSQL:**
 ```env
 PORT=3000
 DATABASE_URL=postgres://user:password@localhost:5432/sugam_seva
@@ -125,7 +125,9 @@ FRONTEND_ORIGIN=http://localhost:3000
 NODE_ENV=development
 GROQ_API_KEY=your_groq_api_key_here
 ```
-> 💡 The `GROQ_API_KEY` is required for the chatbot. Get a free key at [console.groq.com](https://console.groq.com). The key stays on the server and is never sent to the browser.
+> 💡 The `GROQ_API_KEY` is optional for the core demo and required only for the chatbot. Get a key at [console.groq.com](https://console.groq.com). The key stays on the server and is never sent to the browser.
+
+> PostgreSQL must be running and the database named in `DATABASE_URL` must already exist. The migration creates the tables, not the database itself.
 
 **3. Create the database tables**
 ```bash
@@ -282,7 +284,7 @@ flowchart LR
     H --> F
 ```
 
-1. **Authentication** — Users create an account with name, mobile, email, and password (stored as a simple hash for this prototype). Sessions are stored in localStorage.
+1. **Authentication** — Users create an account with name, mobile, email, and password (stored as a simple prototype hash). Sessions and document images are stored in localStorage for this demonstration.
 2. **Document Upload** — Users upload identity documents via camera or file picker. Tesseract.js performs client-side OCR to extract personal details, which auto-populate the user profile.
 3. **Profile & Recommendations** — The server compares the user's profile (age, income, state, documents) against scheme eligibility rules and returns ranked recommendations.
 4. **Scheme Chat** — The floating chatbot sends user questions along with the full scheme catalogue to the Groq API. The system prompt restricts answers to scheme-related topics only.
@@ -291,7 +293,8 @@ flowchart LR
 
 ## ⚠️ Important Notes
 
-> - This is a **prototype**. Documents are stored in browser localStorage, not encrypted at rest.
+> - This is a **prototype**. Documents and applications are stored in browser localStorage, not encrypted at rest; PostgreSQL stores scheme data and synchronized profile/document metadata.
+> - DigiLocker and biometric flows are presentation-ready interface prototypes. Production use requires official DigiLocker onboarding and a real WebAuthn credential service.
 > - Recommendations are guidance only — the official government authority makes the final eligibility decision.
 > - The `X-User-Id` authentication bridge should be replaced with production token/session middleware before deployment.
 > - The chatbot uses `qwen/qwen3.6-27b` on Groq with automatic fallback to `openai/gpt-oss-120b` and `groq/compound`.

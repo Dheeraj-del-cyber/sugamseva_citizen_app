@@ -37,6 +37,15 @@ function parseOptionalNumber(value, field) {
     return number;
 }
 
+function parseDate(value, field = 'dateOfBirth') {
+    if (value === undefined || value === null || value === '') return null;
+    const text = String(value).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error(`${field} must use YYYY-MM-DD format`);
+    const date = new Date(`${text}T00:00:00Z`);
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text) throw new Error(`${field} must be a valid date`);
+    return text;
+}
+
 function validateProfile(body) {
     const name = String(body.name || '').trim();
     const mobile = String(body.mobile || '').trim();
@@ -48,7 +57,7 @@ function validateProfile(body) {
         name, mobile, email,
         state: body.state ? String(body.state).trim().slice(0, 100) : null,
         district: body.district ? String(body.district).trim().slice(0, 100) : null,
-        dateOfBirth: body.dateOfBirth || null,
+        dateOfBirth: parseDate(body.dateOfBirth),
         income: parseOptionalNumber(body.income, 'income'),
         education: body.education ? String(body.education).trim().slice(0, 200) : null,
         occupation: body.occupation ? String(body.occupation).trim().slice(0, 200) : null,
@@ -179,7 +188,7 @@ app.get('/api/recommendations', requireUser, async (req, res, next) => {
     try {
         const profileResult = await query('SELECT * FROM users WHERE id = $1', [req.userId]);
         if (!profileResult.rowCount) return res.status(404).json({ error: 'User profile not found.' });
-        const documentsResult = await query('SELECT document_type, verification_status FROM documents WHERE user_id = $1', [req.userId]);
+        const documentsResult = await query("SELECT document_type, verification_status FROM documents WHERE user_id = $1 AND verification_status = 'verified'", [req.userId]);
         const schemesResult = await query(`${schemeSelect()} GROUP BY s.id, ser.rules ORDER BY s.name`, []);
         const profile = profileResult.rows[0];
         const recommendations = schemesResult.rows.map(row => ({ scheme: serializeScheme(row), assessment: assessScheme(row, profile, documentsResult.rows) }));
@@ -255,7 +264,7 @@ app.put('/api/profile', requireUser, async (req, res, next) => {
         await query(`INSERT INTO users (id, name, mobile, email, state, district, date_of_birth, income, education, occupation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, mobile=EXCLUDED.mobile, email=EXCLUDED.email, state=EXCLUDED.state, district=EXCLUDED.district, date_of_birth=EXCLUDED.date_of_birth, income=EXCLUDED.income, education=EXCLUDED.education, occupation=EXCLUDED.occupation, updated_at=NOW()`, [req.userId, profile.name, profile.mobile, profile.email, profile.state, profile.district, profile.dateOfBirth, profile.income, profile.education, profile.occupation]);
         res.status(204).end();
     } catch (error) {
-        if (error.message.includes('must be') || error.message.includes('is required')) return res.status(400).json({ error: error.message });
+        if (error.message.includes('must be') || error.message.includes('is required') || error.message.includes('must use')) return res.status(400).json({ error: error.message });
         next(error);
     }
 });
@@ -264,9 +273,11 @@ app.post('/api/documents', requireUser, async (req, res, next) => {
     try {
         const id = String(req.body.id || '').trim();
         const documentType = String(req.body.documentType || '').trim();
+        const verificationStatus = String(req.body.verificationStatus || 'unverified');
         if (!/^[A-Za-z0-9_-]{1,100}$/.test(id) || !documentType || documentType.length > 120) return res.status(400).json({ error: 'id and documentType are required.' });
-        await query('INSERT INTO documents (id, user_id, document_type, verification_status) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET document_type=EXCLUDED.document_type', [id, req.userId, documentType, 'unverified']);
-        res.status(201).json({ id, documentType, verificationStatus: 'unverified' });
+        if (!['unverified', 'verified', 'rejected'].includes(verificationStatus)) return res.status(400).json({ error: 'Invalid verification status.' });
+        await query('INSERT INTO documents (id, user_id, document_type, verification_status) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET document_type=EXCLUDED.document_type, verification_status=EXCLUDED.verification_status', [id, req.userId, documentType, verificationStatus]);
+        res.status(201).json({ id, documentType, verificationStatus });
     } catch (error) { next(error); }
 });
 
@@ -275,8 +286,10 @@ app.delete('/api/documents/:id', requireUser, async (req, res, next) => {
         await query('DELETE FROM documents WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
         res.status(204).end();
     } catch (error) { next(error); }
-});app.get('/css/:file', (req, res) => res.sendFile(path.join(root, 'css', req.params.file)));
+});
+app.get('/css/:file', (req, res) => res.sendFile(path.join(root, 'css', req.params.file)));
 app.get('/js/:file', (req, res) => res.sendFile(path.join(root, 'js', req.params.file)));
+app.get('/image/:file', (req, res) => res.sendFile(path.join(root, 'image', req.params.file)));
 app.get('/', (_req, res) => res.sendFile(path.join(root, 'index.html')));
 
 app.use((error, _req, res, _next) => {

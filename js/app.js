@@ -398,7 +398,7 @@
             name: state.profile.fullName || state.currentUser.name,
             mobile: state.currentUser.mobile,
             email: state.currentUser.email,
-            dateOfBirth: state.profile.dateOfBirth || null,
+            dateOfBirth: apiDate(state.profile.dateOfBirth),
             state: state.profile.state || null,
             district: state.profile.district || null,
             income: state.profile.annualIncome || null,
@@ -408,7 +408,13 @@
     }
 
     function syncDocumentMetadata() {
-        return Promise.all(state.documents.map(document => apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: document.id, documentType: document.type }) }).catch(() => {})));
+        return Promise.all(state.documents.map(document => apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: document.id, documentType: document.type, verificationStatus: document.verificationStatus === 'verified' ? 'verified' : 'unverified' }) }).catch(() => {})));
+    }
+
+    function apiDate(value) {
+        if (!value) return null;
+        const match = String(value).match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
+        return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
     }
 
     function loadUserRecords() {
@@ -523,6 +529,23 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button id="home-nav-btn" class="nav-link ${state.currentView === 'home' ? 'active' : ''}">Home</button>
                     <button id="documents-nav-btn" class="nav-link ${state.currentView === 'documents' ? 'active' : ''}">My Documents</button>
+                    <div class="nav-language-dropdown" role="group" aria-label="Language selection">
+                        <select id="language-select" class="sr-only" tabindex="-1" aria-hidden="true">
+                            <option value="en" ${state.language === 'en' ? 'selected' : ''}>English</option>
+                            <option value="hi" ${state.language === 'hi' ? 'selected' : ''}>Hindi</option>
+                            <option value="kn" ${state.language === 'kn' ? 'selected' : ''}>Kannada</option>
+                        </select>
+                        <button type="button" id="lang-trigger" class="nav-link nav-lang-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose language">
+                            <svg class="nav-lang-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            <span id="lang-trigger-label">${state.language === 'hi' ? 'हिन्दी' : state.language === 'kn' ? 'ಕನ್ನಡ' : 'English'}</span>
+                            <svg class="nav-lang-chevron" viewBox="0 0 12 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.5l5 5 5-5"/></svg>
+                        </button>
+                        <ul id="lang-menu" class="nav-lang-menu" role="listbox" aria-label="Choose language" hidden>
+                            <li role="option" data-lang="en" class="nav-lang-option ${state.language === 'en' ? 'active' : ''}" aria-selected="${state.language === 'en' ? 'true' : 'false'}">English</li>
+                            <li role="option" data-lang="hi" class="nav-lang-option ${state.language === 'hi' ? 'active' : ''}" aria-selected="${state.language === 'hi' ? 'true' : 'false'}">हिन्दी</li>
+                            <li role="option" data-lang="kn" class="nav-lang-option ${state.language === 'kn' ? 'active' : ''}" aria-selected="${state.language === 'kn' ? 'true' : 'false'}">ಕನ್ನಡ</li>
+                        </ul>
+                    </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="profile-nav-btn" class="nav-link nav-profile-btn ${state.currentView === 'profile' ? 'active' : ''}" aria-label="My Profile">
@@ -538,6 +561,56 @@
         id('documents-nav-btn').addEventListener('click', () => { closeNavMenu(); state.currentView = 'documents'; state.selectedScheme = null; route(); });
         id('profile-nav-btn').addEventListener('click', () => { closeNavMenu(); state.currentView = 'profile'; route(); });
         id('nav-toggle').addEventListener('click', toggleNavMenu);
+        el.languageSelect = id('language-select');
+        const langTrigger = id('lang-trigger');
+        const langMenu = id('lang-menu');
+        const langLabel = id('lang-trigger-label');
+        const langNames = { en: 'English', hi: 'हिन्दी', kn: 'ಕನ್ನಡ' };
+
+        function closeLangMenu() {
+            if (!langMenu || !langTrigger) return;
+            langMenu.hidden = true;
+            langTrigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function selectLanguage(lang) {
+            state.language = lang;
+            el.languageSelect.value = lang;
+            if (langLabel) langLabel.textContent = langNames[lang] || lang;
+            langMenu.querySelectorAll('.nav-lang-option').forEach(opt => {
+                const isActive = opt.dataset.lang === lang;
+                opt.classList.toggle('active', isActive);
+                opt.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            closeLangMenu();
+            applyLanguage();
+            if (state.currentView === 'home') renderSchemeHome();
+        }
+
+        langTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !langMenu.hidden;
+            langMenu.hidden = isOpen;
+            langTrigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+        });
+
+        langMenu.addEventListener('click', (e) => {
+            const opt = e.target.closest('.nav-lang-option');
+            if (opt && opt.dataset.lang) selectLanguage(opt.dataset.lang);
+        });
+
+        langMenu.addEventListener('keydown', (e) => {
+            const options = [...langMenu.querySelectorAll('.nav-lang-option')];
+            const idx = options.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') { e.preventDefault(); options[(idx + 1) % options.length].focus(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); options[(idx - 1 + options.length) % options.length].focus(); }
+            else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (options[idx]) { selectLanguage(options[idx].dataset.lang); langTrigger.focus(); } }
+            else if (e.key === 'Escape') { closeLangMenu(); langTrigger.focus(); }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!langMenu.hidden && !e.target.closest('.nav-language-dropdown')) closeLangMenu();
+        });
     }
 
     function toggleNavMenu() {
@@ -565,6 +638,10 @@
             toggle.setAttribute('aria-label', 'Open navigation menu');
         }
         document.body.classList.remove('nav-open');
+        const langMenu = id('lang-menu');
+        const langTrigger = id('lang-trigger');
+        if (langMenu) langMenu.hidden = true;
+        if (langTrigger) langTrigger.setAttribute('aria-expanded', 'false');
         if (backdrop) {
             backdrop.classList.remove('is-visible');
             backdrop.setAttribute('aria-hidden', 'true');
@@ -760,8 +837,9 @@
             return `<div class="form-group"><label for="profile-${key}">${label}${profile.sources?.[key] ? ` <span class="profile-source">From ${escHtml(profile.sources[key])}</span>` : ''}</label><select id="profile-${key}" name="${key}" class="form-control ${editing ? '' : 'locked-field'}" ${editing ? '' : 'disabled'}>${['', ...options].map(option => `<option value="${escHtml(option)}" ${selectedValue === option ? 'selected' : ''}>${option || `Select ${label.toLowerCase()}`}</option>`).join('')}</select>${allowOther && selectedValue === 'Other' ? `<input id="profile-${key}-other" name="${key}Other" class="form-control other-value ${editing ? '' : 'locked-field'}" value="${escHtml(customValue || profile[`${key}Other`] || '')}" placeholder="Enter ${label.toLowerCase()}" ${editing ? '' : 'readonly'}>` : ''}</div>`;
         };
         const inputField = ([key, label, type]) => `<div class="form-group"><label for="profile-${key}">${label}${profile.sources?.[key] ? ` <span class="profile-source">From ${escHtml(profile.sources[key])}</span>` : ''}</label><input id="profile-${key}" name="${key}" type="${type}" class="form-control ${editing ? '' : 'locked-field'}" value="${escHtml(profile[key] || '')}" ${editing ? '' : 'readonly'}></div>`;
+        const recentApplications = applications.slice(0, 3);
         const applicationItems = applications.length
-            ? applications.map(application => {
+            ? recentApplications.map(application => {
                 const scheme = findScheme(application.schemeId);
                 return `<li class="profile-list-item"><span class="profile-list-icon">&#10003;</span><span><strong>${escHtml(scheme?.name || application.schemeId)}</strong><small>${escHtml(application.status === 'redirected-to-official-portal' ? 'Redirected to official portal' : application.status || 'Application started')} · ${formatDate(application.submittedAt)}</small></span></li>`;
             }).join('')
@@ -780,13 +858,13 @@
                     <div class="profile-identity-copy"><span class="eyebrow">Citizen account</span><h3>${escHtml(profile.name || 'Citizen')}</h3><p>${escHtml(profile.email || profile.mobile || 'Complete your profile details')}</p>${photo ? '<button type="button" class="text-link profile-remove-photo" data-profile-photo-remove>Remove photo</button>' : ''}</div>
                 </div>
                 <div class="profile-stat-grid" aria-label="Profile summary">
-                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><strong>${state.documents.length}</strong></div>
-                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg><strong>${applications.length}</strong></div>
-                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><strong>${state.documents.filter(document => document.verificationStatus === 'verified').length}</strong></div>
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><strong>${state.documents.length}</strong><span class="stat-label">Documents</span></div>
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg><strong>${applications.length}</strong><span class="stat-label">Applications</span></div>
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><strong>${state.documents.filter(document => document.verificationStatus === 'verified').length}</strong><span class="stat-label">Verified</span></div>
                 </div>
             </div>
             <div class="profile-sections">
-                <section class="profile-panel"><div class="profile-panel-heading"><div><span class="eyebrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Activity</span><h3>Applied schemes</h3></div><span class="profile-panel-count">${applications.length}</span></div><ul class="profile-list">${applicationItems}</ul></section>
+                <section class="profile-panel"><div class="profile-panel-heading"><div><span class="eyebrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Activity</span><h3>Applied schemes</h3></div><span class="profile-panel-count">${applications.length}</span></div><ul class="profile-list">${applicationItems}</ul>${applications.length > 3 ? '<button type="button" class="text-link profile-view-all" data-nav="home">View all schemes</button>' : ''}</section>
                 <section class="profile-panel"><div class="profile-panel-heading"><div><span class="eyebrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>Wallet</span><h3>My documents</h3></div><span class="profile-panel-count">${state.documents.length}</span></div><ul class="profile-list">${documentItems}</ul>${state.documents.length > 5 ? '<button type="button" class="text-link profile-view-all" data-nav="documents">View all documents</button>' : ''}</section>
             </div>
             ${state.profile.conflicts?.length ? '<div class="notice-box"><strong>Review required</strong><span>Different documents contain different information. Confirm the correct values below.</span></div>' : ''}
@@ -1079,7 +1157,7 @@
         };
         state.documents.unshift(doc); // newest first
         persistDocuments();
-        apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: doc.id, documentType: doc.type }) }).catch(() => {});
+        apiFetch('/api/documents', { method: 'POST', body: JSON.stringify({ id: doc.id, documentType: doc.type, verificationStatus: doc.verificationStatus === 'verified' ? 'verified' : 'unverified' }) }).catch(() => {});
         closeUploadModal();
         renderDocumentGrid();
         processDocument(doc);
@@ -1433,12 +1511,6 @@
             renderApplicationReview();
         });
 
-        el.languageSelect.addEventListener('change', () => {
-            state.language = el.languageSelect.value;
-            applyLanguage();
-            if (state.currentView === 'home') renderSchemeHome();
-        });
-
         el.chatForm.addEventListener('submit', handleChatSubmit);
         el.chatInput.addEventListener('keydown', event => {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -1741,7 +1813,7 @@
             const element = document.querySelector(selector);
             if (element) element.textContent = value;
         };
-        setText('#language-label', text.language);
+
         setText('#home-title', text.homeTitle);
         setText('.home-lead', text.homeLead);
         setText('#home-schemes-title', text.recommendedSchemes);
@@ -1751,6 +1823,11 @@
         setText('[data-nav="profile"] .home-action-label', text.myProfile);
         setText('[data-nav="profile"] .home-action-desc', text.profileDescription);
         el.languageSelect.setAttribute('aria-label', text.chooseLanguage);
+        const langTriggerLabel = id('lang-trigger-label');
+        if (langTriggerLabel) {
+            const langNames = { en: 'English', hi: 'हिन्दी', kn: 'ಕನ್ನಡ' };
+            langTriggerLabel.textContent = langNames[state.language] || 'English';
+        }
         setTextGlobal('#chat-status-text', text.online);
         setTextGlobal('.chatbot-panel .chat-disclaimer', text.chatDisclaimer);
         el.chatInput.placeholder = text.chatPlaceholder;
