@@ -87,6 +87,8 @@
         modalOverlay:  id('modal-overlay'),
         closeModalBtn: id('close-modal-btn'),
         docTypeSelect: id('doc-type'),
+        otherDocumentNameGroup: id('other-document-name-group'),
+        otherDocumentName: id('other-document-name'),
         uploadOptions: id('upload-options'),
         fileInput:     id('file-input'),
 
@@ -668,8 +670,8 @@
             <div class="review-list">${Object.entries(fields).map(([key, value]) => `<div><dt>${escHtml(fieldLabel(key))}</dt><dd>${value ? escHtml(value) : '<span class="missing-text">Not provided</span>'}</dd></div>`).join('')}</div>
             <div class="application-docs"><h3>Selected documents</h3><ul>${state.documents.length ? state.documents.map(doc => `<li>${escHtml(doc.type)} <span class="doc-ready">Available</span></li>`).join('') : '<li class="missing-text">No documents selected</li>'}</ul></div>
             <div class="acknowledgement"><input type="checkbox" id="review-ack"> <label for="review-ack">I have reviewed the information and understand that the official authority will verify eligibility.</label></div>
-            <button type="button" class="btn btn-primary" id="submit-application-btn">Submit Application</button>
-            <p class="text-muted submit-note">This button represents the user's manual submission step in this prototype.</p>
+            <button type="button" class="btn btn-primary" id="submit-application-btn">Continue to official application <span aria-hidden="true">&rarr;</span></button>
+            <p class="text-muted submit-note">Your reviewed details and selected documents are saved here. The official portal will open next; review and enter the information there before submitting.</p>
         `;
     }
 
@@ -788,10 +790,11 @@
         renderDocumentGrid();
     }
 
-    function addDocument(type, dataUrl) {
+    function addDocument(type, dataUrl, processingType = type) {
         const doc = {
             id:       Date.now().toString(),
             type,
+            processingType,
             dataUrl,
             addedAt:  new Date().toISOString(),
             verificationStatus: 'verifying',
@@ -857,8 +860,8 @@
                 if (message.status === 'recognizing text') showVerification(doc, 1, `Reading document ${Math.round(message.progress * 100)}%`);
             } });
             showVerification(doc, 2, 'Checking the information detected in the document.');
-            const extractedFields = extractFields(doc.type, result.data.text);
-            const missing = requiredFields(doc.type).filter(field => !extractedFields[field]);
+            const extractedFields = extractFields(doc.processingType || doc.type, result.data.text);
+            const missing = requiredFields(doc.processingType || doc.type).filter(field => !extractedFields[field]);
             doc.extractedFields = extractedFields;
             doc.ocrTextAvailable = Boolean(result.data.text.trim());
             doc.verificationStatus = missing.length ? 'needs-review' : 'verified';
@@ -883,6 +886,9 @@
         el.uploadModal.classList.remove('hidden');
         el.docTypeSelect.value = '';
         el.uploadOptions.classList.add('hidden');
+        el.otherDocumentNameGroup.classList.add('hidden');
+        el.otherDocumentName.value = '';
+        el.otherDocumentName.required = false;
         state.pendingDocType   = null;
         state.camera.capturedData = null;
     }
@@ -900,6 +906,7 @@
         el.stepType.classList.remove('hidden');
         el.imagePreview.src = '';
         el.fileInput.value  = '';
+        if (el.otherDocumentNameGroup) el.otherDocumentNameGroup.classList.add('hidden');
     }
 
     function showStep(stepEl) {
@@ -1047,13 +1054,22 @@
                     alert('Please confirm that you reviewed the application before submitting.');
                     return;
                 }
+                const scheme = findScheme(state.selectedScheme);
+                if (!scheme?.officialApplicationUrl) {
+                    alert('The official application website is not available for this scheme.');
+                    return;
+                }
                 const applications = JSON.parse(localStorage.getItem(KEYS.APPLICATIONS) || '[]');
-                applications.unshift({ id: Date.now().toString(), schemeId: state.selectedScheme, fields: state.application.fields, submittedAt: new Date().toISOString() });
+                applications.unshift({
+                    id: Date.now().toString(),
+                    schemeId: state.selectedScheme,
+                    fields: state.application.fields,
+                    documents: state.documents.map(document => ({ id: document.id, type: document.type })),
+                    submittedAt: new Date().toISOString(),
+                    status: 'redirected-to-official-portal',
+                });
                 localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(applications));
-                alert('Application submitted for manual processing.');
-                state.currentView = 'home';
-                state.selectedScheme = null;
-                route();
+                window.location.assign(scheme.officialApplicationUrl);
             }
         });
 
@@ -1161,6 +1177,10 @@
             } else {
                 el.uploadOptions.classList.add('hidden');
             }
+            const isOther = type === 'Other';
+            el.otherDocumentNameGroup.classList.toggle('hidden', !isOther);
+            el.otherDocumentName.required = isOther;
+            if (!isOther) el.otherDocumentName.value = '';
         });
 
         // Upload options
@@ -1195,7 +1215,13 @@
                 alert('Please select a document type first.');
                 return;
             }
-            addDocument(state.pendingDocType, state.camera.capturedData);
+            const customName = el.otherDocumentName.value.trim();
+            if (state.pendingDocType === 'Other' && !customName) {
+                el.otherDocumentName.focus();
+                alert('Enter a name for this document before saving.');
+                return;
+            }
+            addDocument(state.pendingDocType === 'Other' ? customName : state.pendingDocType, state.camera.capturedData, state.pendingDocType === 'Other' ? 'Other Document' : state.pendingDocType);
         });
 
         // DigiLocker
