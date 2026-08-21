@@ -1,0 +1,320 @@
+[
+  {
+    "id": "PM-KISAN",
+    "name": "PM Kisan Samman Nidhi",
+    "shortDescription": "Direct income support of ₹6,000 per year to small and marginal farmer families across India.",
+    "description": "PM-KISAN is a Central Sector scheme that provides income support of ₹6,000 per annum in three equal installments of ₹2,000 every four months to all land-holding farmer families. The amount is directly transferred to the bank accounts of the beneficiaries.",
+    "benefits": "₹6,000 per year transferred directly to bank account in three installments of ₹2,000 each.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Small and marginal farmer families with combined landholding up to 2 hectares.",
+    "eligibilityDetails": "All land-holding farmers' families with cultivable land are eligible. Excluded: institutional landholders, Constitutional post holders, serving/retired government officers, pensioners with monthly pension ₹10,000+, income tax payers in last assessment year, and professionals like doctors, engineers, lawyers, chartered accountants.",
+    "whoCanApply": "Farmers who own and cultivate land. The family unit is the husband, wife, and minor children.",
+    "ageMin": 18,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Register at the PM-KISAN portal (pmkisan.gov.in) or through the local Patwari / Revenue Officer / Common Service Centre (CSC). Self-registration is also available through the PM-KISAN mobile app.",
+    "deadline": null,
+    "officialApplicationUrl": "https://pmkisan.gov.in/",
+    "officialSourceUrl": "https://pmkisan.gov.in/",
+    "lastUpdated": "2025-12-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Land Ownership Document / Khasra Khatauni", "required": true },
+      { "name": "Bank Passbook (with IFSC and account number)", "required": true }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "requiredDocuments": ["Aadhaar Card", "Land Ownership Document / Khasra Khatauni", "Bank Passbook (with IFSC and account number)"]
+    }
+  },
+  {
+    "id": "PMAY-G",
+    "name": "Pradhan Mantri Awaas Yojana - Gramin",
+    "shortDescription": "Financial assistance to rural homeless families for constructing a pucca house with basic amenities.",
+    "description": "PMAY-G aims to provide a pucca house with basic amenities to all homeless rural families and those living in dilapidated or kutcha houses. The scheme provides Rs 1.20 lakh in plain areas and Rs 1.30 lakh in hilly/difficult areas per beneficiary. It is converged with MGNREGA for labour wages and SBM-G for toilet construction.",
+    "benefits": "Financial assistance of Rs 1.20 lakh (plain areas) or Rs 1.30 lakh (hilly areas) for house construction. Additional Rs 12,000 for toilet construction under SBM-G. 90 days of unskilled labour support under MGNREGA.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Houseless rural families or those living in kutcha / dilapidated houses as per SECC 2011 data.",
+    "eligibilityDetails": "Beneficiaries are selected from the Permanent Wait List derived from SECC 2011 data, prioritised by deprivation parameters. Families with no house, or those living in zero, one, or two-room kutcha houses, are eligible. Excluded are families owning motorised vehicles, farm equipment, Kisan Credit Card with limit above Rs 50,000, members earning more than Rs 10,000/month, income tax payers, or those owning refrigerators or landlines.",
+    "whoCanApply": "Homeless or kutcha-house-dwelling rural families listed in SECC 2011 data verified by the Gram Sabha.",
+    "ageMin": 18,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "Rural areas across all Indian states (except Delhi and Chandigarh)",
+    "applicationProcedure": "Gram Sabha approves beneficiaries from the SECC Priority List. Beneficiaries are informed by the Gram Panchayat. Applications and tracking can be done via the AwaasSoft portal or the Awaas App.",
+    "deadline": null,
+    "officialApplicationUrl": "https://pmaymis.gov.in/",
+    "officialSourceUrl": "https://pmaymis.gov.in/",
+    "lastUpdated": "2025-11-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Bank Passbook", "required": true },
+      { "name": "Job Card (MGNREGA)", "required": false }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "requiredDocuments": ["Aadhaar Card", "Bank Passbook"]
+    }
+  },
+  {
+    "id": "PMJDY",
+    "name": "Pradhan Mantri Jan Dhan Yojana",
+    "shortDescription": "Zero-balance bank account with RuPay debit card and Rs 2 lakh accident insurance for every Indian family.",
+    "description": "PMJDY is the world's largest financial inclusion programme. It ensures access to financial services - banking, savings, credit, insurance and pension - in an affordable manner. Every unbanked adult Indian can open a Basic Savings Bank Deposit account with zero balance, get a RuPay debit card with Rs 2 lakh accident insurance cover, and qualify for an overdraft facility of Rs 10,000.",
+    "benefits": "Zero-balance savings account, RuPay debit card, Rs 2 lakh accident insurance, Rs 10,000 overdraft after 6 months of satisfactory account operation, and access to pension and insurance products.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Any Indian citizen aged 10 years and above who does not have a bank account.",
+    "eligibilityDetails": "All Indian citizens aged 10 and above are eligible. No income or social category restriction. One account per adult in the family is the target. Accounts can be opened at any bank branch or Business Correspondent outlet with minimal documentation.",
+    "whoCanApply": "Any Indian national above 10 years of age who does not have a savings account.",
+    "ageMin": 10,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Visit the nearest bank branch or Business Correspondent. Fill in the PMJDY account opening form and submit with Aadhaar. If Aadhaar is not available, submit one government-approved Officially Valid Document (OVD).",
+    "deadline": null,
+    "officialApplicationUrl": "https://www.pmjdy.gov.in/",
+    "officialSourceUrl": "https://www.pmjdy.gov.in/",
+    "lastUpdated": "2025-10-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Recent Passport-size Photograph", "required": true }
+    ],
+    "rules": {
+      "ageMin": 10,
+      "requiredDocuments": ["Aadhaar Card", "Recent Passport-size Photograph"]
+    }
+  },
+  {
+    "id": "PMJJBY",
+    "name": "Pradhan Mantri Jeevan Jyoti Bima Yojana",
+    "shortDescription": "Life insurance cover of Rs 2 lakh at a premium of only Rs 436 per year for bank account holders aged 18-50.",
+    "description": "PMJJBY is a government-backed life insurance scheme available to people in the age group of 18 to 50 years having a bank or post-office account. It offers a Rs 2 lakh death benefit for all causes at a premium of Rs 436 per annum auto-debited from the account. The scheme is offered through LIC and other participating private life insurance companies.",
+    "benefits": "Rs 2 lakh life insurance cover payable to the nominee on death of the insured for any reason. Premium: Rs 436 per year auto-debited from the savings account.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Age 18-50 years with a savings bank or post-office account and consent to auto-debit.",
+    "eligibilityDetails": "Any person between 18 and 50 years of age who has an individual bank account in a participating bank and gives consent to join and enable auto-debit of premium is eligible. Persons with multiple bank accounts can enrol in one account only. Those who join before 50 can continue coverage up to age 55.",
+    "whoCanApply": "Indian citizens aged 18-50 with a savings bank account at any participating bank.",
+    "ageMin": 18,
+    "ageMax": 50,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Fill in the enrolment-cum-auto-debit authorisation form available at your bank branch. Submit it before 31 May each year for coverage starting 1 June. Many banks support online enrolment through net banking or mobile banking portals.",
+    "deadline": "Annual renewal before 31 May",
+    "officialApplicationUrl": "https://jansuraksha.gov.in/Forms-PMJJBY.aspx",
+    "officialSourceUrl": "https://jansuraksha.gov.in/",
+    "lastUpdated": "2025-06-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Bank Passbook (with account number)", "required": true }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "ageMax": 50,
+      "requiredDocuments": ["Aadhaar Card", "Bank Passbook (with account number)"]
+    }
+  },
+  {
+    "id": "PMSBY",
+    "name": "Pradhan Mantri Suraksha Bima Yojana",
+    "shortDescription": "Accidental death and disability cover of Rs 2 lakh at just Rs 20 per year for savings account holders.",
+    "description": "PMSBY offers accidental death and full disability insurance of Rs 2 lakh and partial disability insurance of Rs 1 lakh at a premium of Rs 20 per annum (auto-debited). Available to savings bank account holders aged 18-70. The scheme is offered by public-sector general insurance companies in tie-up with banks.",
+    "benefits": "Rs 2 lakh for accidental death or total permanent disability. Rs 1 lakh for partial permanent disability. Premium: Rs 20 per year.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Age 18-70 years with a savings bank account and consent to auto-debit.",
+    "eligibilityDetails": "Any person between 18 and 70 years of age with a savings bank or post-office savings bank account who gives consent to enable auto-debit is eligible. Coverage is for death or disability due to an accident only.",
+    "whoCanApply": "Indian citizens aged 18-70 with a savings bank account.",
+    "ageMin": 18,
+    "ageMax": 70,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Submit the application-cum-auto-debit authorisation form to your bank. Many banks allow enrolment via net banking or mobile banking. Auto-renewed each year if the account has sufficient balance.",
+    "deadline": "Annual renewal before 31 May",
+    "officialApplicationUrl": "https://jansuraksha.gov.in/Forms-PMSBY.aspx",
+    "officialSourceUrl": "https://jansuraksha.gov.in/",
+    "lastUpdated": "2025-06-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Bank Passbook (with account number)", "required": true }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "ageMax": 70,
+      "requiredDocuments": ["Aadhaar Card", "Bank Passbook (with account number)"]
+    }
+  },
+  {
+    "id": "AYUSHMAN-BHARAT-PMJAY",
+    "name": "Ayushman Bharat - PM Jan Arogya Yojana (AB PM-JAY)",
+    "shortDescription": "Health insurance cover of Rs 5 lakh per year per family for secondary and tertiary hospitalisation at empanelled hospitals.",
+    "description": "AB PM-JAY is the world's largest publicly funded health insurance scheme. It provides a health cover of Rs 5 lakh per family per year for secondary and tertiary care hospitalisation. Benefits cover up to 3 days of pre-hospitalisation and 15 days of post-hospitalisation expenses, diagnostic services, medicines, and follow-up consultations. The scheme is cashless and paperless at empanelled hospitals.",
+    "benefits": "Rs 5 lakh per family per year for hospitalisation. Covers 1,949+ medical and surgical packages. Cashless and paperless treatment at 30,000+ empanelled hospitals. No cap on family size.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Families listed in SECC 2011 data under deprivation categories and occupational categories.",
+    "eligibilityDetails": "Eligibility is determined by the SECC 2011 database for rural and urban categories. Rural families with at least one deprivation parameter (D1 to D5) and urban families belonging to 11 defined occupational categories qualify. There is no income cap beyond the SECC criteria. States can also define state-specific beneficiary lists.",
+    "whoCanApply": "Families listed in SECC 2011 data. Verification via Aadhaar or Ration Card at any empanelled hospital or Common Service Centre.",
+    "ageMin": null,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All participating Indian states and Union Territories",
+    "applicationProcedure": "No separate application is needed. Walk into any empanelled hospital (public or private) and present Aadhaar or Ration Card to the Ayushman Mitra. Eligibility is verified instantly against the PM-JAY database. The Ayushman card can also be downloaded via the PMJAY portal or BIS app.",
+    "deadline": null,
+    "officialApplicationUrl": "https://beneficiary.nha.gov.in/",
+    "officialSourceUrl": "https://pmjay.gov.in/",
+    "lastUpdated": "2025-09-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Ration Card (BPL / NFSA)", "required": false }
+    ],
+    "rules": {
+      "requiredDocuments": ["Aadhaar Card"]
+    }
+  },
+  {
+    "id": "NSP-POST-MATRIC-SC",
+    "name": "Post Matric Scholarship for SC Students",
+    "shortDescription": "Central government scholarship for Scheduled Caste students studying after Class 10 to cover tuition and maintenance.",
+    "description": "The Post Matric Scholarship for SC students is a centrally sponsored scheme to assist SC students at post-matriculation or post-secondary stages. It covers tuition fees, maintenance allowance, study tour charges, thesis research, and other specific allowances depending on course level and institution type.",
+    "benefits": "Maintenance allowance ranging from Rs 230 to Rs 1,200 per month based on course and hosteller/day-scholar status. Reimbursement of compulsory non-refundable fees. Additional allowances for study tours and thesis typing.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "SC students studying after Class 10 with parental income below Rs 2.5 lakh per annum.",
+    "eligibilityDetails": "Applicant must belong to a Scheduled Caste as notified by the Central Government. Must be pursuing a recognised post-matric level course (Class 11 onwards, including ITI, Diploma, Degree, PG, PhD). Parental income must not exceed Rs 2,50,000 per annum. Must not be availing any other scholarship from central or state government.",
+    "whoCanApply": "SC students enrolled in post-matric courses at recognised educational institutions.",
+    "ageMin": null,
+    "ageMax": null,
+    "incomeMax": 250000,
+    "educationRequirements": "Passed Class 10 and enrolled in a recognised post-matric course",
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Apply online via the National Scholarship Portal (scholarships.gov.in). Create an account, fill in the scholarship application form, upload required documents, and submit. Verification is done by the institution and then the state/UT government.",
+    "deadline": "Applications typically open in July and close in October each year. Check the NSP portal for the current year deadline.",
+    "officialApplicationUrl": "https://scholarships.gov.in/",
+    "officialSourceUrl": "https://socialjustice.gov.in/",
+    "lastUpdated": "2025-08-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Caste Certificate (SC)", "required": true },
+      { "name": "Income Certificate", "required": true },
+      { "name": "Previous Year Mark Sheet", "required": true },
+      { "name": "Current Year Admission / Enrolment Proof", "required": true },
+      { "name": "Bank Passbook", "required": true }
+    ],
+    "rules": {
+      "incomeMax": 250000,
+      "educationRequirements": "Class 10 pass",
+      "requiredDocuments": ["Aadhaar Card", "Caste Certificate (SC)", "Income Certificate", "Previous Year Mark Sheet", "Bank Passbook"]
+    }
+  },
+  {
+    "id": "MUDRA-SHISHU",
+    "name": "MUDRA Loan - Shishu Category (PM MUDRA Yojana)",
+    "shortDescription": "Collateral-free business loan up to Rs 50,000 for micro and small enterprises under Pradhan Mantri MUDRA Yojana.",
+    "description": "Pradhan Mantri MUDRA Yojana (PMMY) provides collateral-free loans to non-corporate, non-farm small and micro-enterprises. The Shishu category covers loans up to Rs 50,000 for early-stage businesses such as vegetable vendors, small traders, artisans, and self-employed individuals. Loans are provided through commercial banks, RRBs, MFIs, and NBFCs.",
+    "benefits": "Collateral-free loan up to Rs 50,000 at affordable interest rates. No processing fee for Shishu loans. Loan usable for equipment purchase, working capital, or business set-up. Comes with a MUDRA Card (prepaid RuPay debit card) for withdrawing working capital.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Non-farm micro/small business owners or self-employed individuals requiring a loan up to Rs 50,000.",
+    "eligibilityDetails": "Any Indian citizen running a non-farm income-generating activity in manufacturing, processing, trading or service sector is eligible. Eligible entities include sole proprietors, partnership firms, and individuals. Applicants must not be defaulters to any bank or financial institution. The business can be a new startup or an existing enterprise.",
+    "whoCanApply": "Micro entrepreneurs, small business owners, artisans, vendors, and self-employed individuals.",
+    "ageMin": 18,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Apply at the nearest bank branch, Regional Rural Bank, Microfinance Institution (MFI), or NBFC. Download the application from mudra.org.in or directly visit the lender. You can also apply through the Udyami Mitra portal for online application.",
+    "deadline": null,
+    "officialApplicationUrl": "https://financialservices.gov.in/",
+    "officialSourceUrl": "https://financialservices.gov.in/",
+    "lastUpdated": "2025-07-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "PAN Card", "required": true },
+      { "name": "Address Proof (Voter ID / Utility Bill / Passport)", "required": true },
+      { "name": "Business Proof / Udyam Registration Certificate", "required": false },
+      { "name": "Bank Statement (last 6 months)", "required": false }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "requiredDocuments": ["Aadhaar Card", "PAN Card", "Address Proof (Voter ID / Utility Bill / Passport)"]
+    }
+  },
+  {
+    "id": "NAPS",
+    "name": "National Apprenticeship Promotion Scheme (NAPS)",
+    "shortDescription": "Government reimburses 25% of prescribed stipend for apprentices to promote skill training in industry.",
+    "description": "NAPS promotes apprenticeship training by sharing the financial burden of the stipend with employers. The government reimburses 25% of the prescribed stipend (up to Rs 1,500 per month per apprentice) to the establishment. Apprentices aged 14-35 get structured on-the-job training under the Apprentices Act, 1961, along with basic training support for those without prior skills.",
+    "benefits": "Apprentices receive a stipend from the employer (25% reimbursed by the government). Basic training support for 500 hours for those without prior skills. Nationally recognised apprenticeship certificate and enhanced employability.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Youth aged 14-35 who have passed Class 5 or above, looking for structured skill training under industry.",
+    "eligibilityDetails": "Apprentices must be between 14 and 35 years of age (relaxable for reserved categories). Minimum educational qualification is Class 5 pass. Must not be a full-time student in a recognised educational institution. Applies to all establishments with more than 4 employees, and voluntarily to those with 4 or fewer employees.",
+    "whoCanApply": "Young Indians aged 14-35 seeking apprenticeship training in industry or businesses registered on the NAPS portal.",
+    "ageMin": 14,
+    "ageMax": 35,
+    "incomeMax": null,
+    "educationRequirements": "Minimum Class 5 pass",
+    "locationRequirements": "All Indian states and Union Territories",
+    "applicationProcedure": "Register on the National Apprenticeship portal (apprenticeshipindia.org). Create a profile, search for available apprenticeship vacancies posted by registered establishments, and apply. Selected candidates undergo basic training and then on-the-job training at the employer site.",
+    "deadline": null,
+    "officialApplicationUrl": "https://msde.gov.in/",
+    "officialSourceUrl": "https://msde.gov.in/",
+    "lastUpdated": "2025-06-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Educational Qualification Certificate (Class 5 minimum)", "required": true },
+      { "name": "Bank Passbook", "required": true },
+      { "name": "Passport-size Photograph", "required": true },
+      { "name": "ITI / Vocational Training Certificate (if any)", "required": false }
+    ],
+    "rules": {
+      "ageMin": 14,
+      "ageMax": 35,
+      "educationRequirements": "Class 5 pass",
+      "requiredDocuments": ["Aadhaar Card", "Educational Qualification Certificate (Class 5 minimum)", "Bank Passbook"]
+    }
+  },
+  {
+    "id": "PM-SVANidhi",
+    "name": "PM SVANidhi - PM Street Vendor's AtmaNirbhar Nidhi",
+    "shortDescription": "Working capital loan of Rs 10,000 to Rs 50,000 for street vendors to restart livelihood without collateral.",
+    "description": "PM SVANidhi is a micro-credit scheme for street vendors. It provides collateral-free working capital loans of Rs 10,000 (1st loan), Rs 20,000 (2nd loan), and Rs 50,000 (3rd loan) to help street vendors resume their livelihoods. Vendors who repay on time earn a cashback incentive of up to 7% on digital transactions and are eligible for enhanced credit limits.",
+    "benefits": "Initial collateral-free loan of Rs 10,000. On timely repayment, enhanced loans of Rs 20,000 and then Rs 50,000. 7% interest subsidy per annum credited quarterly. Digital transaction cashback incentive of up to Rs 1,200 per year.",
+    "scope": "central",
+    "state": null,
+    "eligibilityHighlight": "Street vendors vending in urban areas on or before 24 March 2020 with a Certificate of Vending or Letter of Recommendation from the Urban Local Body.",
+    "eligibilityDetails": "Eligible vendors are those who hold a Certificate of Vending or Identity Card issued by Urban Local Bodies; or have been identified in a ULB-led survey but not yet issued a certificate; or who have a Letter of Recommendation from a ULB or Town Vending Committee. Vendors from surrounding rural/peri-urban areas who sell in urban limits are also covered.",
+    "whoCanApply": "Street vendors operating in urban areas with a vending certificate or Letter of Recommendation from the Urban Local Body.",
+    "ageMin": 18,
+    "ageMax": null,
+    "incomeMax": null,
+    "educationRequirements": null,
+    "locationRequirements": "Urban areas across all Indian states and Union Territories",
+    "applicationProcedure": "Apply through the PM SVANidhi portal (pmsvanidhi.mohua.gov.in) using your mobile number and Aadhaar OTP. Alternatively, visit your nearest Common Service Centre (CSC), bank branch, or Microfinance Institution. Upload the vending certificate or Letter of Recommendation, fill in business details, and submit.",
+    "deadline": null,
+    "officialApplicationUrl": "https://pmsvanidhi.mohua.gov.in/",
+    "officialSourceUrl": "https://pmsvanidhi.mohua.gov.in/",
+    "lastUpdated": "2025-08-01",
+    "documents": [
+      { "name": "Aadhaar Card", "required": true },
+      { "name": "Certificate of Vending / Identity Card or Letter of Recommendation from ULB", "required": true },
+      { "name": "Bank Passbook", "required": true },
+      { "name": "Passport-size Photograph", "required": true }
+    ],
+    "rules": {
+      "ageMin": 18,
+      "requiredDocuments": ["Aadhaar Card", "Certificate of Vending / Identity Card or Letter of Recommendation from ULB", "Bank Passbook"]
+    }
+  }
+]

@@ -32,7 +32,7 @@ The browser uses the existing local sign-in session as the current prototype ide
 
 ## Approved scheme import
 
-The application does not invent a myScheme API endpoint or present synthetic records as government benefits. When the backend is unavailable, the browser shows three clearly labelled demo schemes so the discovery and application-draft flow can be tried locally. Import only an approved myScheme export or officially provided integration payload for real scheme data:
+The application loads government scheme records from the database for every signed-in user. Import only an approved myScheme export or officially provided integration payload:
 
 ```powershell
 npm run import:schemes -- .\path\to\approved-myscheme-export.json
