@@ -1,91 +1,215 @@
 # Sugam Seva
 
-Sugam Seva is a mobile-first prototype for citizen documents and verified government scheme discovery.
+Sugam Seva is a mobile-first citizen services platform for managing personal government documents and discovering verified government schemes. Users can upload and store identity documents (Aadhaar, PAN, Passport, etc.), receive personalised scheme recommendations based on their profile, and chat with an AI assistant that answers questions about available schemes.
 
-## Backend setup
+## Features
 
-Prerequisites: Node.js 20+ and PostgreSQL 14+.
+### Document Management
+- Upload documents via gallery, camera capture, or DigiLocker connection
+- OCR-powered document verification using Tesseract.js
+- Automatic extraction of personal details (name, DOB, address, ID numbers) from uploaded documents
+- Document protection with a 4-digit PIN
+- Blur/thumbnail previews for privacy
+
+### Government Scheme Discovery
+- Personalised scheme recommendations based on user profile and uploaded documents
+- Eligibility assessment engine that evaluates age, income, state, and document requirements
+- Detailed scheme pages with benefits, eligibility, required documents, deadlines, and official links
+- Multi-language support (English, Hindi, Kannada)
+- Filterable scheme catalogue imported from verified government sources
+
+### AI Chat Assistant
+- Floating chatbot accessible from any page via a bottom-right FAB button
+- Powered by Groq API (Qwen 3.6-27B model with automatic fallback)
+- Strictly answers only government scheme-related questions (eligibility, documents, benefits, deadlines, application steps)
+- Polite refusal for off-topic questions
+- Quick-reply suggestion chips for common questions
+- Multi-language responses (English, Hindi, Kannada)
+
+### User Experience
+- Indian tricolour accent bar and emerald green design theme
+- Responsive mobile-first layout
+- Biometric/passkey setup prompt (WebAuthn)
+- Profile management with auto-populated fields from OCR
+- National anthem player in the footer
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vanilla HTML, CSS, JavaScript (no framework) |
+| Backend | Node.js 20+, Express 5 |
+| Database | PostgreSQL 14+ |
+| OCR | Tesseract.js 5 (client-side) |
+| AI Chat | Groq API (Qwen 3.6-27B) |
+| Fonts | Google Fonts (Outfit + Inter) |
+
+## Setup
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 14+
+
+### Installation
 
 1. Install dependencies:
-
-   ```powershell
+   ```bash
    npm install
    ```
 
-2. Create a PostgreSQL database and copy `.env.example` to `.env`. Set `DATABASE_URL` to the database connection string. Never put this file or database credentials in frontend code.
+2. Copy `.env.example` to `.env` and configure:
+   ```env
+   PORT=3000
+   DATABASE_URL=postgres://user:password@localhost:5432/sugam_seva
+   FRONTEND_ORIGIN=http://localhost:3000
+   NODE_ENV=development
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+   The `GROQ_API_KEY` is required for the chatbot. Get a free key at [console.groq.com](https://console.groq.com). The key stays on the server and is never sent to the browser.
 
-  To enable the scheme assistant, also set `GROQ_API_KEY` in `.env`. You may optionally set `GROQ_MODEL`; the default is `llama-3.3-70b-versatile`. The key stays on the server and is never sent to the browser.
-
-3. Create the tables:
-
-   ```powershell
+3. Create the database tables:
+   ```bash
    npm run db:migrate
    ```
 
-4. Start the application server:
+4. Import the approved scheme catalogue:
+   ```bash
+   npm run import:schemes -- ./approved-schemes.json
+   ```
 
-   ```powershell
+5. Start the server:
+   ```bash
    npm start
    ```
 
    Open `http://localhost:3000`.
 
-The browser uses the existing local sign-in session as the current prototype identity and sends only its user id in `X-User-Id`. Replace this bridge with the production authentication token/session middleware before deployment.
+   For development with auto-reload:
+   ```bash
+   npm run dev
+   ```
 
-## Approved scheme import
+## Database Schema
 
-The application loads government scheme records from the database for every signed-in user. Import only an approved myScheme export or officially provided integration payload:
+The application uses five tables:
 
-```powershell
-npm run import:schemes -- .\path\to\approved-myscheme-export.json
-```
+- **users** — Citizen profiles (name, mobile, email, state, district, DOB, income, education, occupation)
+- **documents** — Uploaded document metadata (type, verification status, expiry)
+- **schemes** — Government scheme catalogue (name, description, benefits, eligibility, application procedure, official URLs)
+- **scheme_documents** — Required/optional documents per scheme
+- **scheme_eligibility_rules** — JSON eligibility rules per scheme (age, income, state, document requirements)
 
-The input must be either an array or an object with a `schemes` array. Each record must contain the fields below. The importer rejects missing provenance, non-HTTPS links, and non-`gov.in` official URLs.
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/health` | No | Database health check |
+| `GET` | `/api/schemes` | No | List all schemes (optional `?scope=central&state=Karnataka` filters) |
+| `GET` | `/api/schemes/:id` | No | Get a single scheme with documents and rules |
+| `GET` | `/api/schemes/:id/documents` | No | List required documents for a scheme |
+| `GET` | `/api/recommendations` | Yes | Personalised scheme recommendations for the user |
+| `PUT` | `/api/profile` | Yes | Create or update user profile |
+| `POST` | `/api/documents` | Yes | Register document metadata |
+| `DELETE` | `/api/documents/:id` | Yes | Remove a document |
+| `POST` | `/api/chat` | Yes | Chat with the scheme assistant |
+
+All authenticated endpoints require the `X-User-Id` header.
+
+### Chat Request
 
 ```json
+POST /api/chat
 {
-  "schemes": [
-    {
-      "id": "stable-official-id",
-      "name": "Official scheme name",
-      "shortDescription": "Short official description",
-      "description": "Complete official description",
-      "benefits": "Official benefits",
-      "scope": "central",
-      "state": null,
-      "eligibilityHighlight": "Basic official eligibility highlight",
-      "eligibilityDetails": "Detailed official eligibility",
-      "whoCanApply": "Official applicant description",
-      "ageMin": null,
-      "ageMax": null,
-      "incomeMax": null,
-      "educationRequirements": null,
-      "locationRequirements": null,
-      "applicationProcedure": "Official procedure",
-      "deadline": null,
-      "officialApplicationUrl": "https://example.gov.in/apply",
-      "officialSourceUrl": "https://example.gov.in/scheme",
-      "lastUpdated": "2026-08-20",
-      "documents": [{ "name": "Aadhaar Card", "required": true }],
-      "rules": {
-        "requiredDocuments": ["Aadhaar Card"],
-        "states": []
-      }
-    }
-  ]
+  "message": "What is PM-KISAN?",
+  "language": "en",
+  "history": []
 }
 ```
 
-## API
+**Response:**
+```json
+{
+  "answer": "PM-KISAN is a central government scheme...",
+  "language": "en"
+}
+```
 
-- `GET /api/schemes`
-- `GET /api/schemes/:id`
-- `GET /api/recommendations` with `X-User-Id`
-- `GET /api/schemes/:id/documents`
-- `PUT /api/profile` with `X-User-Id`
-- `POST /api/documents` with `X-User-Id` (metadata only)
-- `DELETE /api/documents/:id` with `X-User-Id`
-- `GET /api/health`
-- `POST /api/chat` with `X-User-Id`, `message`, `language` (`en`, `hi`, or `kn`), and optional recent `history`
+The `history` field accepts an optional array of previous `{ role, content }` messages for conversation context (last 8 messages).
 
-Recommendations never claim official eligibility. The engine evaluates only explicit imported rules and returns `May Be Eligible`; the government scheme authority remains the final decision-maker.
+## Scheme Import
+
+Import only verified myScheme exports or officially provided integration payloads:
+
+```bash
+npm run import:schemes -- ./path/to/approved-myscheme-export.json
+```
+
+The input must be either an array or an object with a `schemes` array. Each record must contain:
+
+```json
+{
+  "id": "stable-official-id",
+  "name": "Official scheme name",
+  "shortDescription": "Short description",
+  "description": "Full description",
+  "benefits": "Official benefits",
+  "scope": "central",
+  "state": null,
+  "eligibilityHighlight": "Basic eligibility",
+  "eligibilityDetails": "Detailed eligibility",
+  "whoCanApply": "Applicant description",
+  "ageMin": null,
+  "ageMax": null,
+  "incomeMax": null,
+  "educationRequirements": null,
+  "locationRequirements": null,
+  "applicationProcedure": "How to apply",
+  "deadline": null,
+  "officialApplicationUrl": "https://example.gov.in/apply",
+  "officialSourceUrl": "https://example.gov.in/scheme",
+  "lastUpdated": "2026-01-01",
+  "documents": [{ "name": "Aadhaar Card", "required": true }],
+  "rules": {
+    "requiredDocuments": ["Aadhaar Card"],
+    "states": []
+  }
+}
+```
+
+The importer validates that official URLs use HTTPS and belong to `gov.in` domains. Records are upserted on `id` conflict.
+
+## Project Structure
+
+```
+├── index.html                 # Single-page application shell
+├── css/
+│   └── styles.css             # Full design system (CSS custom properties, responsive)
+├── js/
+│   └── app.js                 # Client-side application logic (routing, auth, documents, chat)
+├── server/
+│   ├── index.js               # Express API server
+│   ├── db.js                  # PostgreSQL connection pool
+│   ├── schema.sql             # Database migration
+│   ├── migrate.js             # Migration runner
+│   └── import-schemes.js      # Scheme catalogue importer
+├── approved-schemes.json      # Seed data (10 government schemes)
+├── .env.example               # Environment template
+└── package.json
+```
+
+## How It Works
+
+1. **Authentication** — Users create an account with name, mobile, email, and password (stored as a simple hash for this prototype). Sessions are stored in localStorage.
+
+2. **Document Upload** — Users upload identity documents via camera or file picker. Tesseract.js performs client-side OCR to extract personal details, which auto-populate the user profile.
+
+3. **Profile & Recommendations** — The server compares the user's profile (age, income, state, documents) against scheme eligibility rules and returns ranked recommendations.
+
+4. **Scheme Chat** — The floating chatbot sends user questions along with the full scheme catalogue to the Groq API. The system prompt restricts answers to scheme-related topics only.
+
+## Important Notes
+
+- This is a **prototype**. Documents are stored in browser localStorage, not encrypted at rest.
+- Recommendations are guidance only — the official government authority makes the final eligibility decision.
+- The `X-User-Id` authentication bridge should be replaced with production token/session middleware before deployment.
+- The chatbot uses `qwen/qwen3.6-27b` on Groq with automatic fallback to `openai/gpt-oss-120b` and `groq/compound`.
