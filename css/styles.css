@@ -365,6 +365,8 @@ select.form-control {
 .profile-strip strong, .profile-label { display: block; }
 .profile-label { color: var(--color-text-muted); font-size: var(--font-size-xs); margin-bottom: 2px; }
 .profile-strip strong { font-size: var(--font-size-sm); }
+.demo-notice { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; background: var(--color-warning-bg); border: 1px solid var(--color-warning-bd); color: var(--color-warning-text); padding: 12px 14px; margin-bottom: 2px; font-size: var(--font-size-sm); }
+.demo-notice strong { white-space: nowrap; }
 .section-heading { margin-bottom: 16px; }
 .section-heading h3 { color: var(--color-primary-dark); margin-bottom: 2px; }
 .scheme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }

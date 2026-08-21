@@ -36,6 +36,84 @@
         recommendationError: null,
     };
 
+    const DEMO_SCHEMES = [
+        {
+            id: 'demo-education-support',
+            name: 'Demo Education Support Grant',
+            shortDescription: 'A sample scholarship journey for students exploring document-based applications.',
+            description: 'This synthetic record demonstrates how a citizen can discover a benefit, review requirements, and prepare an application draft.',
+            benefits: 'Illustrative tuition support of up to INR 25,000 per academic year.',
+            scope: 'central',
+            state: null,
+            eligibilityHighlight: 'Students aged 16 to 25 with annual household income below INR 300,000.',
+            eligibilityDetails: 'Applicants should be enrolled in a recognised course and provide current education and income records.',
+            whoCanApply: 'Students or a parent/guardian applying on behalf of a student.',
+            ageMin: 16,
+            ageMax: 25,
+            incomeMax: 300000,
+            educationRequirements: 'Proof of current enrolment',
+            locationRequirements: 'Any Indian state',
+            applicationProcedure: 'Complete the draft form, review the information and documents, then use the official portal when one is available.',
+            deadline: 'Demo deadline: 31 March 2027',
+            officialApplicationUrl: null,
+            officialSourceUrl: null,
+            lastUpdated: '2026-08-21',
+            isDemo: true,
+            documents: [{ name: 'Aadhaar Card', required: true }, { name: 'Education Certificate', required: true }, { name: 'Income Certificate', required: true }],
+            assessment: { status: 'Demo Only', reasons: ['Sample recommendation'], missingDocuments: [] },
+        },
+        {
+            id: 'demo-health-cover',
+            name: 'Demo Family Health Cover',
+            shortDescription: 'A sample health-benefit application for families reviewing required identity documents.',
+            description: 'Use this demo to see a complete benefit detail page and a review-first application process.',
+            benefits: 'Illustrative annual health cover of INR 100,000 per family.',
+            scope: 'central',
+            state: null,
+            eligibilityHighlight: 'Families with annual household income below INR 500,000.',
+            eligibilityDetails: 'The final authority would verify household income, identity and residence before approving a claim.',
+            whoCanApply: 'An adult household member with valid identity and residence proof.',
+            ageMin: null,
+            ageMax: null,
+            incomeMax: 500000,
+            educationRequirements: null,
+            locationRequirements: 'Any Indian state',
+            applicationProcedure: 'Prepare the listed documents, complete the application draft, confirm the review acknowledgement, and submit through the designated authority.',
+            deadline: 'Demo deadline: 30 June 2027',
+            officialApplicationUrl: null,
+            officialSourceUrl: null,
+            lastUpdated: '2026-08-21',
+            isDemo: true,
+            documents: [{ name: 'Aadhaar Card', required: true }, { name: 'Income Certificate', required: true }, { name: 'Voter ID', required: false }],
+            assessment: { status: 'Demo Only', reasons: ['Sample recommendation'], missingDocuments: [] },
+        },
+        {
+            id: 'demo-women-enterprise',
+            name: 'Demo Women Enterprise Starter',
+            shortDescription: 'A sample small-business support journey with a practical checklist of documents.',
+            description: 'This demo record shows how scheme information and reusable citizen documents can come together before an official application.',
+            benefits: 'Illustrative startup assistance of up to INR 50,000.',
+            scope: 'state',
+            state: 'Maharashtra',
+            eligibilityHighlight: 'Women entrepreneurs aged 18 and above living in Maharashtra.',
+            eligibilityDetails: 'Applicants would need to satisfy the final programme rules and provide identity, address and business details.',
+            whoCanApply: 'Women starting or formalising a small enterprise in Maharashtra.',
+            ageMin: 18,
+            ageMax: null,
+            incomeMax: null,
+            educationRequirements: null,
+            locationRequirements: 'Maharashtra',
+            applicationProcedure: 'Complete the profile fields, attach the requested documents, review the application, and continue to the relevant official authority.',
+            deadline: 'Demo deadline: 15 September 2027',
+            officialApplicationUrl: null,
+            officialSourceUrl: null,
+            lastUpdated: '2026-08-21',
+            isDemo: true,
+            documents: [{ name: 'Aadhaar Card', required: true }, { name: 'PAN Card', required: true }, { name: 'Address Proof', required: true }],
+            assessment: { status: 'Demo Only', reasons: ['Sample recommendation'], missingDocuments: [] },
+        },
+    ];
+
     const API_BASE = window.SUGAM_SEVA_API_BASE || '';
 
     // ============================================================
@@ -419,7 +497,7 @@
             state.schemes = result.recommendations.map(item => ({ ...item.scheme, assessment: item.assessment }));
             state.recommendationError = null;
         } catch (error) {
-            state.schemes = [];
+            state.schemes = DEMO_SCHEMES;
             state.recommendationError = error.message;
         }
         el.profileStrip.innerHTML = `
@@ -427,15 +505,11 @@
             <div><span class="profile-label">Documents available</span><strong>${state.documents.length}</strong></div>
             <div><span class="profile-label">Assessment</span><strong>May Be Eligible</strong></div>
         `;
-        if (state.recommendationError) {
-            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><h3>Verified schemes are unavailable</h3><p>Connect the backend and import an approved myScheme dataset before showing recommendations.</p></div>`;
-            return;
-        }
         if (!state.schemes.length) {
             el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><h3>No verified schemes available</h3><p>No approved scheme records have been imported yet.</p></div>`;
             return;
         }
-        el.schemeGrid.innerHTML = state.schemes.map(scheme => `
+        el.schemeGrid.innerHTML = `${state.recommendationError ? '<div class="demo-notice" role="status"><strong>Demo catalogue</strong><span>Connect PostgreSQL and import an approved dataset to replace these sample records.</span></div>' : ''}${state.schemes.map(scheme => `
             <article class="scheme-card">
                 <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : 'Profile checked')}</span></div>
                 <h3>${escHtml(scheme.name)}</h3>
@@ -447,7 +521,7 @@
                 </dl>
                 <button type="button" class="btn btn-primary" data-scheme-details="${scheme.id}">View Details <span aria-hidden="true">&rarr;</span></button>
             </article>
-        `).join('');
+        `).join('')}`;
     }
 
     function findScheme(id) {
@@ -466,7 +540,7 @@
             }
         }
         el.schemeDetails.innerHTML = `
-            <div class="detail-heading"><div><span class="scheme-status">May Be Eligible</span><h2 id="scheme-details-title">${escHtml(scheme.name)}</h2><p>${escHtml(scheme.description)}</p></div><span class="official-mark">Official source listed</span></div>
+            <div class="detail-heading"><div><span class="scheme-status">${escHtml(scheme.isDemo ? 'Demo Only' : 'May Be Eligible')}</span><h2 id="scheme-details-title">${escHtml(scheme.name)}</h2><p>${escHtml(scheme.description)}</p></div><span class="official-mark">${scheme.isDemo ? 'Synthetic demo record' : 'Official source listed'}</span></div>
             <div class="detail-grid">
                 <section class="detail-section"><h3>Benefits</h3><p>${escHtml(scheme.benefits)}</p></section>
                 <section class="detail-section"><h3>Detailed eligibility</h3><p>${escHtml(scheme.eligibilityDetails)}</p></section>
@@ -474,8 +548,8 @@
                 <section class="detail-section"><h3>Required documents</h3><ul>${scheme.documents.map(doc => `<li>${escHtml(doc.name)}</li>`).join('')}</ul></section>
                 <section class="detail-section"><h3>Application process</h3><p>${escHtml(scheme.applicationProcedure)}</p></section>
                 <section class="detail-section"><h3>Deadline</h3><p>${escHtml(scheme.deadline || 'Not published')}</p></section>
-                <section class="detail-section"><h3>Official source</h3><p><a href="${escHtml(scheme.officialSourceUrl)}" target="_blank" rel="noopener">Open official source</a></p></section>
-                <section class="detail-section"><h3>Apply officially</h3><p><a href="${escHtml(scheme.officialApplicationUrl)}" target="_blank" rel="noopener">Open application website</a></p></section>
+                <section class="detail-section"><h3>Official source</h3><p>${scheme.officialSourceUrl ? `<a href="${escHtml(scheme.officialSourceUrl)}" target="_blank" rel="noopener">Open official source</a>` : 'Demo record: no official source linked.'}</p></section>
+                <section class="detail-section"><h3>Apply officially</h3><p>${scheme.officialApplicationUrl ? `<a href="${escHtml(scheme.officialApplicationUrl)}" target="_blank" rel="noopener">Open application website</a>` : 'Demo record: this draft is not sent to an authority.'}</p></section>
             </div>
             <div class="detail-actions"><button type="button" class="btn btn-primary" id="interested-btn">I'm Interested</button><p class="text-muted">Starting an application does not confirm eligibility or submit anything.</p></div>
         `;
