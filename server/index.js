@@ -3,11 +3,12 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import { query } from './db.js';
 
 const app = express();
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT) || 3000;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const officialHost = /(^|\.)gov\.in$/i;
 
@@ -186,6 +187,68 @@ app.get('/api/recommendations', requireUser, async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+app.post('/api/chat', requireUser, async (req, res, next) => {
+    try {
+        if (!process.env.GROQ_API_KEY) return res.status(503).json({ error: 'Chatbot is not configured yet. Add GROQ_API_KEY to the server environment.' });
+        const message = String(req.body?.message || '').trim();
+        const language = String(req.body?.language || 'en');
+        const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8) : [];
+        const languageNames = { en: 'English', hi: 'Hindi', kn: 'Kannada' };
+        if (!message || message.length > 1200) return res.status(400).json({ error: 'Enter a question up to 1,200 characters.' });
+        if (!languageNames[language]) return res.status(400).json({ error: 'Choose English, Hindi, or Kannada.' });
+
+        const schemesResult = await query(`${schemeSelect()} GROUP BY s.id, ser.rules ORDER BY s.name`, []);
+        const schemeContext = schemesResult.rows.map(row => ({
+            name: row.name,
+            description: row.description,
+            benefits: row.benefits,
+            eligibility: row.eligibility_details,
+            whoCanApply: row.who_can_apply,
+            documents: row.documents,
+            applicationProcedure: row.application_procedure,
+            deadline: row.deadline,
+            officialSourceUrl: row.official_source_url,
+            officialApplicationUrl: row.official_application_url,
+        }));
+        const messages = [
+            {
+                role: 'system',
+                content: `You are Sugam Seva's government scheme assistant for Indian citizens.
+
+STRICT RULES:
+1. You MUST answer ONLY questions related to the government schemes in the catalogue below — eligibility criteria, required documents, benefits, deadlines, application steps, scheme comparisons, or general guidance on how to apply.
+2. If the user asks about anything OUTSIDE of government schemes (e.g., personal advice, weather, sports, coding, math, recipes, politics, religion, etc.), you MUST politely decline and say: "I can only help with government scheme-related questions. Please ask about schemes, eligibility, documents, or how to apply."
+3. Never invent scheme facts, eligibility decisions, deadlines, links, or documents.
+4. Always remind the citizen that the official government authority makes the final eligibility decision.
+5. Reply in ${languageNames[language]}. Be concise, clear, and helpful. Use simple language and short paragraphs.
+
+Catalogue of approved schemes:
+${JSON.stringify(schemeContext, null, 0)}`,
+            },
+            ...history.filter(item => ['user', 'assistant'].includes(item?.role) && typeof item?.content === 'string').map(item => ({ role: item.role, content: item.content.slice(0, 2000) })),
+            { role: 'user', content: message },
+        ];
+        const models = ['qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'groq/compound'];
+        const chosenModel = process.env.GROQ_MODEL || models[0];
+        let response, body;
+        for (const model of [chosenModel, ...models.filter(m => m !== chosenModel)]) {
+            response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model, messages, temperature: 0.2, max_tokens: 2048 }),
+            });
+            body = await response.json().catch(() => null);
+            if (response.ok) break;
+        }
+        if (!response.ok) return res.status(502).json({ error: body?.error?.message || 'The chatbot could not answer right now.' });
+        let answer = body?.choices?.[0]?.message?.content?.trim();
+        if (!answer) return res.status(502).json({ error: 'The chatbot returned an empty answer.' });
+        // Strip model thinking tags (<think>...</think>)
+        answer = answer.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
+        res.json({ answer, language });
+    } catch (error) { next(error); }
+});
+
 app.put('/api/profile', requireUser, async (req, res, next) => {
     try {
         const profile = validateProfile(req.body || {});
@@ -212,9 +275,7 @@ app.delete('/api/documents/:id', requireUser, async (req, res, next) => {
         await query('DELETE FROM documents WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
         res.status(204).end();
     } catch (error) { next(error); }
-});
-
-app.get('/css/:file', (req, res) => res.sendFile(path.join(root, 'css', req.params.file)));
+});app.get('/css/:file', (req, res) => res.sendFile(path.join(root, 'css', req.params.file)));
 app.get('/js/:file', (req, res) => res.sendFile(path.join(root, 'js', req.params.file)));
 app.get('/', (_req, res) => res.sendFile(path.join(root, 'index.html')));
 

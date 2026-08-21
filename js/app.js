@@ -38,6 +38,7 @@
         profileEditing: false,
         schemes: [],
         recommendationError: null,
+        chatMessages: [],
     };
 
     const API_BASE = window.SUGAM_SEVA_API_BASE || '';
@@ -77,6 +78,13 @@
         schemeGrid:    id('scheme-grid'),
         profileStrip:  id('profile-strip'),
         languageSelect: id('language-select'),
+        chatForm: id('chat-form'),
+        chatInput: id('chat-input'),
+        chatMessages: id('chat-messages'),
+        chatSendBtn: id('chat-send-btn'),
+        chatFab: id('chat-fab'),
+        chatbotPanel: id('chatbot-panel'),
+        chatbotCloseBtn: id('chatbot-close-btn'),
         schemeDetails: id('scheme-details-content'),
         applicationContent: id('application-content'),
         profileContent: id('profile-content'),
@@ -138,6 +146,10 @@
         documentPasswordConfirm: id('document-password-confirm'),
         documentPasswordConfirmGroup: id('document-password-confirm-group'),
         closeDocumentUnlock: id('close-document-unlock-btn'),
+
+        // Anthem
+        anthemToggleBtn: id('anthem-toggle-btn'),
+        nationalAnthemAudio: id('national-anthem-audio'),
     };
 
     function id(s) { return document.getElementById(s); }
@@ -326,18 +338,24 @@
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
-            <div id="nav-links" class="nav-links">
-                <span class="nav-user">Hi, ${escHtml(state.currentUser.name)}</span>
-                <button id="home-nav-btn" class="nav-link ${state.currentView === 'home' ? 'active' : ''}">Home</button>
-                <button id="documents-nav-btn" class="nav-link ${state.currentView === 'documents' ? 'active' : ''}">My Documents</button>
-                <button id="profile-nav-btn" class="nav-link ${state.currentView === 'profile' ? 'active' : ''}">Your Details</button>
-                <button id="logout-btn" class="btn btn-secondary btn-nav-logout">Sign Out</button>
+            <div id="nav-links" class="nav-links" style="flex: 1; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="home-nav-btn" class="nav-link ${state.currentView === 'home' ? 'active' : ''}">Home</button>
+                    <button id="documents-nav-btn" class="nav-link ${state.currentView === 'documents' ? 'active' : ''}">My Documents</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="profile-nav-btn" class="nav-link nav-profile-btn ${state.currentView === 'profile' ? 'active' : ''}" aria-label="My Profile">
+                        ${state.profile && state.profile.photo ? 
+                            `<img src="${escHtml(state.profile.photo)}" alt="Profile" class="nav-profile-img">` : 
+                            `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`
+                        }
+                    </button>
+                </div>
             </div>
         `;
         id('home-nav-btn').addEventListener('click', () => { closeNavMenu(); state.currentView = 'home'; state.selectedScheme = null; route(); });
         id('documents-nav-btn').addEventListener('click', () => { closeNavMenu(); state.currentView = 'documents'; state.selectedScheme = null; route(); });
         id('profile-nav-btn').addEventListener('click', () => { closeNavMenu(); state.currentView = 'profile'; route(); });
-        id('logout-btn').addEventListener('click', handleLogout);
         id('nav-toggle').addEventListener('click', toggleNavMenu);
     }
 
@@ -380,6 +398,18 @@
         if (state.isSignUpMode) {
             el.toggleAuthBtn.textContent = 'Already have an account? Sign In';
             el.authForm.innerHTML = `
+                <div class="auth-heading text-center">
+                    <svg class="indian-flag-icon" viewBox="0 0 64 42" width="48" height="32" style="margin: 0 auto 16px; display: block; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <rect width="64" height="14" fill="#FF9933"/>
+                        <rect y="14" width="64" height="14" fill="#FFFFFF"/>
+                        <rect y="28" width="64" height="14" fill="#138808"/>
+                        <circle cx="32" cy="21" r="5" fill="none" stroke="#000080" stroke-width="1"/>
+                        <circle cx="32" cy="21" r="1" fill="#000080"/>
+                    </svg>
+                    <span class="auth-kicker">Citizen account</span>
+                    <h1>Start with Sugam Seva</h1>
+                    <p>Create one secure place for your documents and public-service applications.</p>
+                </div>
                 <div class="form-group"><label for="reg-name">Full Name</label><input type="text" id="reg-name" class="form-control" placeholder="Enter your full name" required autocomplete="name"></div>
                 <div class="form-group"><label for="reg-mobile">Mobile Number</label><input type="tel" id="reg-mobile" class="form-control" placeholder="10-digit mobile number" required autocomplete="tel" maxlength="10"></div>
                 <div class="form-group"><label for="reg-email">Email Address</label><input type="email" id="reg-email" class="form-control" placeholder="you@example.com" required autocomplete="email"></div>
@@ -389,6 +419,18 @@
         } else {
             el.toggleAuthBtn.textContent = 'New here? Create an account';
             el.authForm.innerHTML = `
+                <div class="auth-heading text-center">
+                    <svg class="indian-flag-icon" viewBox="0 0 64 42" width="64" height="42" style="margin: 0 auto 20px; display: block; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <rect width="64" height="14" fill="#FF9933"/>
+                        <rect y="14" width="64" height="14" fill="#FFFFFF"/>
+                        <rect y="28" width="64" height="14" fill="#138808"/>
+                        <circle cx="32" cy="21" r="6" fill="none" stroke="#000080" stroke-width="1.2"/>
+                        <path d="M32 15 L32 27 M26 21 L38 21 M28 17 L36 25 M28 25 L36 17" stroke="#000080" stroke-width="0.5"/>
+                    </svg>
+                    <span class="auth-kicker">Secure access</span>
+                    <h1>Welcome back</h1>
+                    <p>Sign in to continue to your documents and recommended schemes.</p>
+                </div>
                 <div class="form-group"><label for="login-id">Mobile Number or Email</label><input type="text" id="login-id" class="form-control" placeholder="Mobile or email" required autocomplete="username"></div>
                 <div class="form-group"><label for="login-pass">Password</label><input type="password" id="login-pass" class="form-control" placeholder="Your password" required autocomplete="current-password"></div>
                 <button type="submit" class="btn btn-primary btn-block" style="margin-bottom:0;">Sign In</button>`;
@@ -523,6 +565,8 @@
 
     function renderProfile(editing = false) {
         const profile = getProfile();
+        const applications = loadUserApplications();
+        const photo = profile.photo || '';
         const fields = [
             ['fullName', 'Full name', 'text'], ['dateOfBirth', 'Date of birth', 'date'], ['address', 'Address', 'text'],
             ['district', 'District', 'text'], ['pincode', 'Pincode', 'text'], ['education', 'Education', 'text'],
@@ -535,9 +579,37 @@
             return `<div class="form-group"><label for="profile-${key}">${label}${profile.sources?.[key] ? ` <span class="profile-source">From ${escHtml(profile.sources[key])}</span>` : ''}</label><select id="profile-${key}" name="${key}" class="form-control ${editing ? '' : 'locked-field'}" ${editing ? '' : 'disabled'}>${['', ...options].map(option => `<option value="${escHtml(option)}" ${selectedValue === option ? 'selected' : ''}>${option || `Select ${label.toLowerCase()}`}</option>`).join('')}</select>${allowOther && selectedValue === 'Other' ? `<input id="profile-${key}-other" name="${key}Other" class="form-control other-value ${editing ? '' : 'locked-field'}" value="${escHtml(customValue || profile[`${key}Other`] || '')}" placeholder="Enter ${label.toLowerCase()}" ${editing ? '' : 'readonly'}>` : ''}</div>`;
         };
         const inputField = ([key, label, type]) => `<div class="form-group"><label for="profile-${key}">${label}${profile.sources?.[key] ? ` <span class="profile-source">From ${escHtml(profile.sources[key])}</span>` : ''}</label><input id="profile-${key}" name="${key}" type="${type}" class="form-control ${editing ? '' : 'locked-field'}" value="${escHtml(profile[key] || '')}" ${editing ? '' : 'readonly'}></div>`;
+        const applicationItems = applications.length
+            ? applications.map(application => {
+                const scheme = findScheme(application.schemeId);
+                return `<li class="profile-list-item"><span class="profile-list-icon">&#10003;</span><span><strong>${escHtml(scheme?.name || application.schemeId)}</strong><small>${escHtml(application.status === 'redirected-to-official-portal' ? 'Redirected to official portal' : application.status || 'Application started')} · ${formatDate(application.submittedAt)}</small></span></li>`;
+            }).join('')
+            : '<li class="profile-empty-item">No scheme applications yet.</li>';
+        const documentItems = state.documents.length
+            ? state.documents.slice(0, 5).map(document => `<li class="profile-list-item"><span class="profile-list-icon document-icon">&#128196;</span><span><strong>${escHtml(document.type)}</strong><small>${escHtml(verificationLabel(document.verificationStatus))} · Added ${formatDate(document.addedAt)}</small></span></li>`).join('')
+            : '<li class="profile-empty-item">No documents added yet.</li>';
         el.profileContent.innerHTML = `
+            <div class="profile-overview">
+                <div class="profile-identity-card">
+                    <div class="profile-photo-wrap">
+                        ${photo ? `<img class="profile-photo" src="${escHtml(photo)}" alt="Profile photo">` : '<span class="profile-photo-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>'}
+                        <label class="profile-photo-button" for="profile-photo-input" title="Add profile photo">&#43;<span class="sr-only">Add profile photo</span></label>
+                        <input id="profile-photo-input" class="hidden" type="file" accept="image/*">
+                    </div>
+                    <div class="profile-identity-copy"><span class="eyebrow">Citizen account</span><h3>${escHtml(profile.name || 'Citizen')}</h3><p>${escHtml(profile.email || profile.mobile || 'Complete your profile details')}</p>${photo ? '<button type="button" class="text-link profile-remove-photo" data-profile-photo-remove>Remove photo</button>' : ''}</div>
+                </div>
+                <div class="profile-stat-grid" aria-label="Profile summary">
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><strong>${state.documents.length}</strong></div>
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg><strong>${applications.length}</strong></div>
+                    <div class="stat-item"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><strong>${state.documents.filter(document => document.verificationStatus === 'verified').length}</strong></div>
+                </div>
+            </div>
+            <div class="profile-sections">
+                <section class="profile-panel"><div class="profile-panel-heading"><div><span class="eyebrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Activity</span><h3>Applied schemes</h3></div><span class="profile-panel-count">${applications.length}</span></div><ul class="profile-list">${applicationItems}</ul></section>
+                <section class="profile-panel"><div class="profile-panel-heading"><div><span class="eyebrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>Wallet</span><h3>My documents</h3></div><span class="profile-panel-count">${state.documents.length}</span></div><ul class="profile-list">${documentItems}</ul>${state.documents.length > 5 ? '<button type="button" class="text-link profile-view-all" data-nav="documents">View all documents</button>' : ''}</section>
+            </div>
             ${state.profile.conflicts?.length ? '<div class="notice-box"><strong>Review required</strong><span>Different documents contain different information. Confirm the correct values below.</span></div>' : ''}
-            <form id="profile-form" class="application-form" novalidate>
+            <form id="profile-form" class="application-form profile-details-form" novalidate>
                 ${inputField(fields[0])}
                 ${inputField(fields[1])}
                 ${selectField('gender', 'Gender', ['Male', 'Female', 'Other'], true)}
@@ -545,16 +617,40 @@
                 ${fields.slice(2).map(inputField).join('')}
                 ${selectField('occupation', 'Occupation', ['Student', 'Farmer', 'Self-employed', 'Business owner', 'Private sector employee', 'Government employee', 'Homemaker', 'Retired', 'Unemployed', 'Other'], true)}
                 ${selectField('category', 'Category', ['General', 'Scheduled Caste (SC)', 'Scheduled Tribe (ST)', 'Other Backward Class (OBC)', 'Economically Weaker Section (EWS)', 'Other'], true)}
-                ${editing ? '<button type="submit" class="btn btn-primary">Confirm Details</button>' : '<button type="button" id="edit-profile-btn" class="btn btn-secondary">Edit Details</button>'}
+                ${editing ? '<button type="submit" class="btn btn-primary btn-block">Confirm Details</button>' : '<button type="button" id="edit-profile-btn" class="btn btn-secondary btn-block">Edit Details</button>'}
+                <button type="button" id="logout-btn" class="btn btn-danger btn-block" style="margin-top: 16px;">Sign Out</button>
             </form>`;
+
+        const logoutBtn = id('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+    }
+
+    function loadUserApplications() {
+        let applications;
+        try { applications = JSON.parse(localStorage.getItem(KEYS.APPLICATIONS) || '[]'); } catch { applications = []; }
+        if (!Array.isArray(applications) || !state.currentUser) return [];
+        return applications.filter(application => !application.userId || application.userId === state.currentUser.id);
     }
 
     async function renderSchemeHome() {
-        el.schemeGrid.innerHTML = `<div class="loading-state" role="status" aria-live="polite"><div class="spinner" aria-hidden="true"></div><p>Loading recommended schemes…</p></div>`;
+        const renderLanguage = state.language;
+        const text = languageText[renderLanguage] || languageText.en;
+        el.schemeGrid.innerHTML = `<div class="loading-state" role="status" aria-live="polite"><div class="spinner" aria-hidden="true"></div><p>${text.loadingSchemes}</p></div>`;
+
+        // Populate greeting on home page
+        const homeGreeting = document.getElementById('home-greeting');
+        if (homeGreeting && state.currentUser) {
+            const hour = new Date().getHours();
+            const greet = hour < 12 ? text.morning : hour < 17 ? text.afternoon : text.evening;
+            homeGreeting.textContent = `${greet}, ${state.currentUser.name} 👋`;
+        }
+
         el.profileStrip.innerHTML = `
-            <div><span class="profile-label">Profile used</span><strong>${escHtml(getProfile().name)}</strong></div>
-            <div><span class="profile-label">Documents available</span><strong>${state.documents.length}</strong></div>
-            <div><span class="profile-label">Assessment</span><strong>May Be Eligible</strong></div>
+            <div><span class="profile-label">${text.profileUsed}</span><strong>${escHtml(getProfile().name)}</strong></div>
+            <div><span class="profile-label">${text.documentsAvailable}</span><strong>${state.documents.length}</strong></div>
+            <div><span class="profile-label">${text.assessment}</span><strong>${text.mayBeEligible}</strong></div>
         `;
         try {
             const result = await apiFetch('/api/recommendations');
@@ -573,25 +669,21 @@
                 state.recommendationError = error.message;
             }
         }
+        if (renderLanguage !== state.language) return;
         if (!state.schemes.length) {
-            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><svg class="empty-state-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><h3>No verified schemes available</h3><p>No approved scheme records have been imported yet.</p></div>`;
+            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><svg class="empty-state-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><h3>${text.noSchemes}</h3><p>${text.noSchemesDescription}</p></div>`;
             return;
         }
         if (state.recommendationError) {
-            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><svg class="empty-state-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Government schemes are unavailable</h3><p>Connect the database to load the official scheme catalogue.</p></div>`;
+            el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><svg class="empty-state-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>${text.unavailable}</h3><p>${text.connectDatabase}</p></div>`;
             return;
         }
         el.schemeGrid.innerHTML = state.schemes.map(scheme => `
             <article class="scheme-card">
-                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : 'Profile checked')}</span></div>
+                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status === 'May Be Eligible' ? text.mayBeEligible : scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : text.profileChecked)}</span></div>
                 <h3>${escHtml(scheme.name)}</h3>
                 <p class="scheme-description">${escHtml(scheme.shortDescription)}</p>
-                <dl class="scheme-facts">
-                    <div><dt>Main benefit</dt><dd>${escHtml(scheme.benefits)}</dd></div>
-                    <div><dt>Basic eligibility</dt><dd>${escHtml(scheme.eligibilityHighlight)}</dd></div>
-                    <div><dt>Important documents</dt><dd>${escHtml(scheme.documents.map(document => document.name).join(', '))}</dd></div>
-                </dl>
-                <button type="button" class="btn btn-primary" data-scheme-details="${scheme.id}">View Details <span aria-hidden="true">&rarr;</span></button>
+                <button type="button" class="btn btn-primary scheme-see-more" data-scheme-details="${scheme.id}">${text.seeMore} <span aria-hidden="true">&rarr;</span></button>
             </article>
         `).join('');
     }
@@ -1065,6 +1157,7 @@
                 const applications = JSON.parse(localStorage.getItem(KEYS.APPLICATIONS) || '[]');
                 applications.unshift({
                     id: Date.now().toString(),
+                    userId: state.currentUser.id,
                     schemeId: state.selectedScheme,
                     fields: state.application.fields,
                     documents: state.documents.map(document => ({ id: document.id, type: document.type })),
@@ -1131,7 +1224,98 @@
         el.languageSelect.addEventListener('change', () => {
             state.language = el.languageSelect.value;
             applyLanguage();
+            if (state.currentView === 'home') renderSchemeHome();
         });
+
+        el.chatForm.addEventListener('submit', handleChatSubmit);
+        el.chatInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                el.chatForm.requestSubmit();
+            }
+        });
+
+        // Quick-reply chips: clicking fills input and submits
+        const chatChips = document.getElementById('chat-chips');
+        if (chatChips) {
+            chatChips.addEventListener('click', event => {
+                const chip = event.target.closest('[data-chat-chip]');
+                if (!chip) return;
+                el.chatInput.value = chip.textContent.trim();
+                el.chatForm.requestSubmit();
+            });
+        }
+
+        // Chat FAB toggle
+        function openChatbotPanel() {
+            const panel = el.chatbotPanel;
+            const fab = el.chatFab;
+            panel.classList.remove('hidden');
+            panel.classList.add('is-opening');
+            void panel.offsetWidth; // force reflow
+            panel.classList.remove('is-opening');
+            panel.classList.add('is-open');
+            fab.classList.add('is-open');
+            fab.setAttribute('aria-label', 'Close chat assistant');
+            el.chatInput.focus();
+        }
+
+        function closeChatbotPanel() {
+            const panel = el.chatbotPanel;
+            const fab = el.chatFab;
+            panel.classList.remove('is-open');
+            fab.classList.remove('is-open');
+            fab.setAttribute('aria-label', 'Open chat assistant');
+            panel.addEventListener('transitionend', function handler() {
+                panel.removeEventListener('transitionend', handler);
+                if (!panel.classList.contains('is-open')) {
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        el.chatFab.addEventListener('click', () => {
+            if (el.chatbotPanel.classList.contains('is-open')) {
+                closeChatbotPanel();
+            } else {
+                openChatbotPanel();
+            }
+        });
+
+        // Chatbot close button
+        el.chatbotCloseBtn.addEventListener('click', closeChatbotPanel);
+
+        // National Anthem
+        if (el.anthemToggleBtn && el.nationalAnthemAudio) {
+            el.anthemToggleBtn.addEventListener('click', () => {
+                const audio = el.nationalAnthemAudio;
+                const playIcon = el.anthemToggleBtn.querySelector('.anthem-icon-play');
+                const pauseIcon = el.anthemToggleBtn.querySelector('.anthem-icon-pause');
+                const btnText = id('anthem-btn-text');
+
+                if (audio.paused) {
+                    audio.play();
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                    if(btnText) btnText.textContent = 'Pause Anthem';
+                } else {
+                    audio.pause();
+                    audio.currentTime = 0; // Reset on pause for clean experience
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                    if(btnText) btnText.textContent = 'National Anthem';
+                }
+            });
+
+            el.nationalAnthemAudio.addEventListener('ended', () => {
+                const playIcon = el.anthemToggleBtn.querySelector('.anthem-icon-play');
+                const pauseIcon = el.anthemToggleBtn.querySelector('.anthem-icon-pause');
+                const btnText = id('anthem-btn-text');
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                if(btnText) btnText.textContent = 'National Anthem';
+            });
+        }
 
         // Filter chips
         el.filterBar.addEventListener('click', e => {
@@ -1156,6 +1340,18 @@
         el.documentUnlockOverlay.addEventListener('click', () => closeDocumentUnlock(false));
 
         el.profileContent.addEventListener('change', event => {
+            if (event.target.id === 'profile-photo-input') {
+                const file = event.target.files?.[0];
+                if (!file || !file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    state.profile.photo = reader.result;
+                    saveProfile();
+                    renderProfile(state.profileEditing);
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
             if (!['gender', 'occupation', 'category'].includes(event.target.name)) return;
             const group = event.target.closest('.form-group');
             const existingOther = group.querySelector('.other-value');
@@ -1168,6 +1364,14 @@
                 other.placeholder = `Enter ${event.target.name}`;
                 group.appendChild(other);
                 other.focus();
+            }
+        });
+
+        el.profileContent.addEventListener('click', event => {
+            if (event.target.closest('[data-profile-photo-remove]')) {
+                delete state.profile.photo;
+                saveProfile();
+                renderProfile(state.profileEditing);
             }
         });
 
@@ -1241,6 +1445,9 @@
                 if (!el.uploadModal.classList.contains('hidden'))  closeUploadModal();
                 if (!el.viewModal.classList.contains('hidden'))    el.viewModal.classList.add('hidden');
                 if (!el.documentUnlockModal.classList.contains('hidden')) closeDocumentUnlock(false);
+                if (el.chatbotPanel.classList.contains('is-open')) {
+                    closeChatbotPanel();
+                }
             }
         });
 
@@ -1265,21 +1472,103 @@
     // ============================================================
     //  Helpers
     // ============================================================
-    function applyLanguage() {
-        const labels = {
-            en: ['Schemes for your next step', 'Recommended schemes', 'View Details'],
-            hi: ['Aapke liye yojanaen', 'Sujhayi gayi yojanaen', 'Vivaran dekhen'],
-            mr: ['Tumachyasathi yojana', 'Shifaras kelelya yojana', 'Mahiti paha'],
-            ta: ['Ungalukkaana thittangal', 'Parinduraikkappatta thittangal', 'Vivaram paarkkavum']
-        }[state.language];
-        if (!labels) return;
-        el.homeView.querySelector('#home-title').textContent = labels[0];
-        const heading = el.homeView.querySelector('.section-heading h3');
-        if (heading) heading.textContent = labels[1];
-        el.homeView.querySelectorAll('[data-scheme-details]').forEach(button => {
-            button.childNodes[0].textContent = labels[2] + ' ';
-        });
+    async function handleChatSubmit(event) {
+        event.preventDefault();
+        const message = el.chatInput.value.trim();
+        if (!message || el.chatSendBtn.disabled) return;
+        const history = [...state.chatMessages];
+        state.chatMessages.push({ role: 'user', content: message });
+        el.chatInput.value = '';
+        el.chatSendBtn.disabled = true;
+        el.chatSendBtn.innerHTML = '<span class="chat-send-spinner" aria-hidden="true"></span>';
+        renderChatMessages(true);
+        try {
+            const result = await apiFetch('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({ message, language: state.language, history }),
+            });
+            state.chatMessages.push({ role: 'assistant', content: result.answer });
+        } catch (error) {
+            state.chatMessages.push({ role: 'assistant', content: error.message || 'The chatbot could not answer right now.', error: true });
+        } finally {
+            el.chatSendBtn.disabled = false;
+            el.chatSendBtn.innerHTML = `${(languageText[state.language] || languageText.en).send} <span aria-hidden="true">&rarr;</span>`;
+            renderChatMessages();
+            el.chatInput.focus();
+        }
     }
+
+    function renderChatMessages(loading = false) {
+        const welcome = (languageText[state.language] || languageText.en).chatWelcome;
+        const messages = state.chatMessages.length
+            ? state.chatMessages.map(message => `<div class="chat-message ${message.role}${message.error ? ' error' : ''}"><strong>${message.role === 'user' ? (languageText[state.language] || languageText.en).you : 'Sugam Seva assistant'}</strong><p>${escHtml(message.content).replace(/\n/g, '<br>')}</p></div>`).join('')
+            : `<div class="chat-message assistant"><strong>Sugam Seva assistant</strong><p>${welcome}</p></div>`;
+        el.chatMessages.innerHTML = messages + (loading ? '<div class="chat-message assistant chat-loading"><strong>Sugam Seva assistant</strong><p><span></span><span></span><span></span></p></div>' : '');
+        el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+        // Hide suggestion chips once conversation starts
+        const chips = document.getElementById('chat-chips');
+        if (chips) chips.style.display = state.chatMessages.length ? 'none' : '';
+    }
+
+    function applyLanguage() {
+        const text = languageText[state.language] || languageText.en;
+        const setText = (selector, value) => {
+            const element = el.homeView.querySelector(selector);
+            if (element) element.textContent = value;
+        };
+        const setTextGlobal = (selector, value) => {
+            const element = document.querySelector(selector);
+            if (element) element.textContent = value;
+        };
+        setText('#language-label', text.language);
+        setText('#home-title', text.homeTitle);
+        setText('.home-lead', text.homeLead);
+        setText('#home-schemes-title', text.recommendedSchemes);
+        setText('#home-schemes-description', text.schemesDescription);
+        setText('[data-nav="documents"] .home-action-label', text.myDocuments);
+        setText('[data-nav="documents"] .home-action-desc', text.documentsDescription);
+        setText('[data-nav="profile"] .home-action-label', text.myProfile);
+        setText('[data-nav="profile"] .home-action-desc', text.profileDescription);
+        el.languageSelect.setAttribute('aria-label', text.chooseLanguage);
+        setTextGlobal('#chat-status-text', text.online);
+        setTextGlobal('.chatbot-panel .chat-disclaimer', text.chatDisclaimer);
+        el.chatInput.placeholder = text.chatPlaceholder;
+        el.chatSendBtn.innerHTML = `${text.send} <span aria-hidden="true">&rarr;</span>`;
+        renderChatMessages();
+    }
+
+    const languageText = {
+        en: {
+            language: 'Language', chooseLanguage: 'Choose language', homeTitle: 'Schemes for your next step',
+            homeLead: 'Based on the information and documents you have shared. Every result is a possibility, not an official eligibility decision.',
+            recommendedSchemes: 'Recommended schemes', schemesDescription: 'A short view of the benefits that may fit your profile.',
+            myDocuments: 'My Documents', documentsDescription: 'View and manage uploaded IDs', myProfile: 'My Profile',
+            profileDescription: 'Update profile for better matches', seeMore: 'See more', profileUsed: 'Profile used',
+            documentsAvailable: 'Documents available', assessment: 'Assessment', mayBeEligible: 'May Be Eligible', profileChecked: 'Profile checked',
+            noSchemes: 'No verified schemes available', noSchemesDescription: 'No approved scheme records have been imported yet.', loadingSchemes: 'Loading recommended schemes…', unavailable: 'Government schemes are unavailable', connectDatabase: 'Connect the database to load the official scheme catalogue.', morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening',
+            chatTitle: 'Ask about government schemes', chatDescription: 'Ask about benefits, eligibility, documents, deadlines, or how to apply.', chatPlaceholder: 'Ask a question about schemes...', send: 'Send', online: 'Online', chatDisclaimer: 'Answers are guidance only. The official government authority makes the final decision.', chatWelcome: 'Ask me anything about the approved government schemes.', you: 'You'
+        },
+        hi: {
+            language: 'भाषा', chooseLanguage: 'भाषा चुनें', homeTitle: 'आपके अगले कदम के लिए योजनाएं',
+            homeLead: 'आपके द्वारा साझा की गई जानकारी और दस्तावेजों के आधार पर। हर परिणाम केवल एक संभावना है, आधिकारिक पात्रता निर्णय नहीं।',
+            recommendedSchemes: 'अनुशंसित योजनाएं', schemesDescription: 'आपकी प्रोफ़ाइल के अनुसार लाभों का संक्षिप्त विवरण।',
+            myDocuments: 'मेरे दस्तावेज़', documentsDescription: 'अपलोड किए गए पहचान दस्तावेज़ देखें और प्रबंधित करें', myProfile: 'मेरी प्रोफ़ाइल',
+            profileDescription: 'बेहतर सुझावों के लिए प्रोफ़ाइल अपडेट करें', seeMore: 'और देखें', profileUsed: 'प्रोफ़ाइल का उपयोग',
+            documentsAvailable: 'उपलब्ध दस्तावेज़', assessment: 'आकलन', mayBeEligible: 'पात्र हो सकते हैं', profileChecked: 'प्रोफ़ाइल जांची गई',
+            noSchemes: 'कोई सत्यापित योजना उपलब्ध नहीं', noSchemesDescription: 'अभी तक कोई स्वीकृत योजना रिकॉर्ड आयात नहीं किया गया है।', loadingSchemes: 'अनुशंसित योजनाएं लोड हो रही हैं…', unavailable: 'सरकारी योजनाएं उपलब्ध नहीं हैं', connectDatabase: 'आधिकारिक योजना सूची लोड करने के लिए डेटाबेस कनेक्ट करें।', morning: 'सुप्रभात', afternoon: 'नमस्कार', evening: 'शुभ संध्या',
+            chatTitle: 'सरकारी योजनाओं के बारे में पूछें', chatDescription: 'लाभ, पात्रता, दस्तावेज़, समय सीमा या आवेदन प्रक्रिया के बारे में पूछें।', chatPlaceholder: 'योजनाओं के बारे में सवाल पूछें...', send: 'भेजें', online: 'ऑनलाइन', chatDisclaimer: 'उत्तर केवल मार्गदर्शन हैं। अंतिम निर्णय सरकारी प्राधिकरण का होगा।', chatWelcome: 'स्वीकृत सरकारी योजनाओं के बारे में कुछ भी पूछें।', you: 'आप'
+        },
+        kn: {
+            language: 'ಭಾಷೆ', chooseLanguage: 'ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ', homeTitle: 'ನಿಮ್ಮ ಮುಂದಿನ ಹೆಜ್ಜೆಗೆ ಯೋಜನೆಗಳು',
+            homeLead: 'ನೀವು ಹಂಚಿಕೊಂಡ ಮಾಹಿತಿ ಮತ್ತು ದಾಖಲೆಗಳ ಆಧಾರದ ಮೇಲೆ. ಪ್ರತಿ ಫಲಿತಾಂಶವೂ ಒಂದು ಸಾಧ್ಯತೆ ಮಾತ್ರ, ಅಧಿಕೃತ ಅರ್ಹತಾ ನಿರ್ಧಾರವಲ್ಲ.',
+            recommendedSchemes: 'ಶಿಫಾರಸು ಮಾಡಿದ ಯೋಜನೆಗಳು', schemesDescription: 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ಗೆ ಹೊಂದುವ ಪ್ರಯೋಜನಗಳ ಸಂಕ್ಷಿಪ್ತ ನೋಟ.',
+            myDocuments: 'ನನ್ನ ದಾಖಲೆಗಳು', documentsDescription: 'ಅಪ್‌ಲೋಡ್ ಮಾಡಿದ ಗುರುತಿನ ದಾಖಲೆಗಳನ್ನು ನೋಡಿ ಮತ್ತು ನಿರ್ವಹಿಸಿ', myProfile: 'ನನ್ನ ಪ್ರೊಫೈಲ್',
+            profileDescription: 'ಉತ್ತಮ ಹೊಂದಾಣಿಕೆಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಿ', seeMore: 'ಇನ್ನಷ್ಟು ನೋಡಿ', profileUsed: 'ಬಳಸಿದ ಪ್ರೊಫೈಲ್',
+            documentsAvailable: 'ಲಭ್ಯವಿರುವ ದಾಖಲೆಗಳು', assessment: 'ಮೌಲ್ಯಮಾಪನ', mayBeEligible: 'ಅರ್ಹರಾಗಿರಬಹುದು', profileChecked: 'ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
+            noSchemes: 'ಯಾವುದೇ ಪರಿಶೀಲಿಸಿದ ಯೋಜನೆಗಳು ಲಭ್ಯವಿಲ್ಲ', noSchemesDescription: 'ಯಾವುದೇ ಅನುಮೋದಿತ ಯೋಜನೆ ದಾಖಲೆಗಳನ್ನು ಇನ್ನೂ ಆಮದು ಮಾಡಲಾಗಿಲ್ಲ।', loadingSchemes: 'ಶಿಫಾರಸು ಮಾಡಿದ ಯೋಜನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…', unavailable: 'ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು ಲಭ್ಯವಿಲ್ಲ', connectDatabase: 'ಅಧಿಕೃತ ಯೋಜನೆಗಳ ಪಟ್ಟಿಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕಿಸಿ.', morning: 'ಶುಭೋದಯ', afternoon: 'ನಮಸ್ಕಾರ', evening: 'ಶುಭ ಸಂಜೆ',
+            chatTitle: 'ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಕೇಳಿ', chatDescription: 'ಪ್ರಯೋಜನಗಳು, ಅರ್ಹತೆ, ದಾಖಲೆಗಳು, ಗಡುವುಗಳು ಅಥವಾ ಅರ್ಜಿ ಪ್ರಕ್ರಿಯೆಯ ಬಗ್ಗೆ ಕೇಳಿ.', chatPlaceholder: 'ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಪ್ರಶ್ನೆ ಕೇಳಿ...', send: 'ಕಳುಹಿಸಿ', online: 'ಆನ್‌ಲೈನ್', chatDisclaimer: 'ಉತ್ತರಗಳು ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ಮಾತ್ರ. ಅಂತಿಮ ನಿರ್ಧಾರವನ್ನು ಸರ್ಕಾರಿ ಪ್ರಾಧಿಕಾರ ಮಾಡುತ್ತದೆ.', chatWelcome: 'ಅನುಮೋದಿತ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ.', you: 'ನೀವು'
+        }
+    };
 
     function val(elId) {
         const el = document.getElementById(elId);

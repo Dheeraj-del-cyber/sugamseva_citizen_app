@@ -14,6 +14,8 @@ Prerequisites: Node.js 20+ and PostgreSQL 14+.
 
 2. Create a PostgreSQL database and copy `.env.example` to `.env`. Set `DATABASE_URL` to the database connection string. Never put this file or database credentials in frontend code.
 
+  To enable the scheme assistant, also set `GROQ_API_KEY` in `.env`. You may optionally set `GROQ_MODEL`; the default is `llama-3.3-70b-versatile`. The key stays on the server and is never sent to the browser.
+
 3. Create the tables:
 
    ```powershell
@@ -84,5 +86,6 @@ The input must be either an array or an object with a `schemes` array. Each reco
 - `POST /api/documents` with `X-User-Id` (metadata only)
 - `DELETE /api/documents/:id` with `X-User-Id`
 - `GET /api/health`
+- `POST /api/chat` with `X-User-Id`, `message`, `language` (`en`, `hi`, or `kn`), and optional recent `history`
 
 Recommendations never claim official eligibility. The engine evaluates only explicit imported rules and returns `May Be Eligible`; the government scheme authority remains the final decision-maker.

@@ -10,12 +10,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
     <a href="#app-container" class="skip-link">Skip to main content</a>
+
+    <!-- Tricolor Top Accent -->
+    <div class="tricolor-bar" aria-hidden="true">
+        <div class="saffron"></div>
+        <div class="white"></div>
+        <div class="green"></div>
+    </div>
 
     <!-- App Header -->
     <header class="app-header" role="banner">
@@ -110,7 +117,7 @@
 
         <section id="profile-view" class="view hidden" role="main" aria-labelledby="profile-title">
             <div class="container container-wide scheme-shell narrow-shell">
-                <div class="section-heading page-intro"><p class="eyebrow">Personal Information</p><h2 id="profile-title">Your Details</h2><p>Review extracted details before using them for applications.</p></div>
+                <div class="section-heading page-intro"><p class="eyebrow">Account overview</p><h2 id="profile-title">My Profile</h2><p>Manage your identity, documents, and scheme applications in one place.</p></div>
                 <div id="profile-content"></div>
             </div>
         </section>
@@ -120,16 +127,16 @@
             <div class="container container-wide scheme-shell">
                 <header class="home-header">
                     <div class="home-header-main page-intro">
+                        <p id="home-greeting" class="home-greeting"></p>
                         <p class="eyebrow">Sugam Seva / Benefits</p>
                         <h2 id="home-title">Schemes for your next step</h2>
                         <p class="home-lead">Based on the information and documents you have shared. Every result is a possibility, not an official eligibility decision.</p>
                     </div>
-                    <label class="language-control" for="language-select">Language
+                    <label class="language-control" for="language-select"><span id="language-label">Language</span>
                         <select id="language-select" class="form-control" aria-label="Choose language">
                             <option value="en">English</option>
                             <option value="hi">Hindi</option>
-                            <option value="mr">Marathi</option>
-                            <option value="ta">Tamil</option>
+                            <option value="kn">Kannada</option>
                         </select>
                     </label>
                 </header>
@@ -138,11 +145,13 @@
 
                 <div class="home-quick-actions" id="home-quick-actions">
                     <a href="#" class="home-action-card" data-nav="documents">
+                        <svg class="action-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--color-primary); margin-bottom: 8px; display: block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                         <span class="home-action-label">My Documents</span>
                         <span class="home-action-desc">View and manage uploaded IDs</span>
                     </a>
                     <a href="#" class="home-action-card" data-nav="profile">
-                        <span class="home-action-label">Your Details</span>
+                        <svg class="action-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--color-primary); margin-bottom: 8px; display: block;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span class="home-action-label">My Profile</span>
                         <span class="home-action-desc">Update profile for better matches</span>
                     </a>
                 </div>
@@ -150,10 +159,12 @@
                 <section class="home-schemes" aria-labelledby="home-schemes-title">
                     <div class="section-heading">
                         <h3 id="home-schemes-title">Recommended schemes</h3>
-                        <p>A short view of the benefits that may fit your profile.</p>
+                        <p id="home-schemes-description">A short view of the benefits that may fit your profile.</p>
                     </div>
                     <div id="scheme-grid" class="scheme-grid" aria-live="polite"></div>
                 </section>
+
+
             </div>
         </section>
 
@@ -309,14 +320,54 @@
 
     </main>
 
+    <!-- =================== FLOATING CHATBOT =================== -->
+    <button id="chat-fab" class="chat-fab" aria-label="Open chat assistant" type="button">
+        <svg class="chat-fab-icon-chat" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg class="chat-fab-icon-close" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <div id="chatbot-panel" class="chatbot-panel hidden" role="dialog" aria-label="Chat assistant">
+        <div class="chatbot-header">
+            <div class="chatbot-header-info">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <div><p class="chatbot-header-title">Sugam Seva Assistant</p><span class="chatbot-status"><span class="chatbot-status-dot"></span><span id="chat-status-text">Online</span></span></div>
+            </div>
+            <button id="chatbot-close-btn" class="chatbot-close-btn" aria-label="Close chat" type="button">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"><div class="chat-message assistant"><strong>Sugam Seva assistant</strong><p>Ask me anything about the approved government schemes.</p></div></div>
+        <div id="chat-chips" class="chat-chips">
+            <button type="button" class="chat-chip" data-chat-chip>What schemes am I eligible for?</button>
+            <button type="button" class="chat-chip" data-chat-chip>How do I apply?</button>
+            <button type="button" class="chat-chip" data-chat-chip>What documents do I need?</button>
+            <button type="button" class="chat-chip" data-chat-chip>Are there any deadlines?</button>
+        </div>
+        <p class="chat-disclaimer">Answers are guidance only. The official government authority makes the final decision.</p>
+        <form id="chat-form" class="chat-form">
+            <label class="sr-only" for="chat-input">Ask a scheme question</label>
+            <textarea id="chat-input" rows="1" maxlength="1200" placeholder="Ask a question about schemes..."></textarea>
+            <button type="submit" class="btn btn-primary" id="chat-send-btn">Send <span aria-hidden="true">&rarr;</span></button>
+        </form>
+    </div>
+
     <footer class="app-footer" role="contentinfo">
         <div class="container container-wide footer-inner">
             <p class="footer-trust">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Secure &amp; Trusted
             </p>
-            <p>© 2026 Sugam Seva &nbsp;·&nbsp; A public service initiative</p>
+            <p>© 2026 Sugam Seva &nbsp;·&nbsp; A premium public service initiative</p>
             <p class="text-muted">Documents are stored locally on your device for this prototype.</p>
+            
+            <div class="anthem-container">
+                <button id="anthem-toggle-btn" class="btn btn-ghost btn-sm anthem-btn" aria-label="Play National Anthem">
+                    <svg class="anthem-icon-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="anthem-icon-pause hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <span id="anthem-btn-text">National Anthem</span>
+                </button>
+                <audio id="national-anthem-audio" src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Jana_Gana_Mana_instrumental.ogg" preload="none"></audio>
+            </div>
         </div>
     </footer>
 
