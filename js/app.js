@@ -650,7 +650,7 @@
         el.profileStrip.innerHTML = `
             <div><span class="profile-label">${text.profileUsed}</span><strong>${escHtml(getProfile().name)}</strong></div>
             <div><span class="profile-label">${text.documentsAvailable}</span><strong>${state.documents.length}</strong></div>
-            <div><span class="profile-label">${text.assessment}</span><strong>${text.mayBeEligible}</strong></div>
+            <div><span class="profile-label">${text.assessment}</span><strong>${text.youAreEligible}</strong></div>
         `;
         try {
             const result = await apiFetch('/api/recommendations');
@@ -661,7 +661,7 @@
                 const result = await apiFetch('/api/schemes');
                 state.schemes = result.schemes.map(scheme => ({
                     ...scheme,
-                    assessment: { status: 'May Be Eligible', reasons: ['Profile not assessed'], missingDocuments: [] },
+                    assessment: { status: 'You Are Eligible', reasons: ['Profile not assessed'], missingDocuments: [] },
                 }));
                 state.recommendationError = null;
             } catch {
@@ -680,7 +680,7 @@
         }
         el.schemeGrid.innerHTML = state.schemes.map(scheme => `
             <article class="scheme-card">
-                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status === 'May Be Eligible' ? text.mayBeEligible : scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : text.profileChecked)}</span></div>
+                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status === 'You Are Eligible' ? text.youAreEligible : scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : text.profileChecked)}</span></div>
                 <h3>${escHtml(scheme.name)}</h3>
                 <p class="scheme-description">${escHtml(scheme.shortDescription)}</p>
                 <button type="button" class="btn btn-primary scheme-see-more" data-scheme-details="${scheme.id}">${text.seeMore} <span aria-hidden="true">&rarr;</span></button>
@@ -704,7 +704,7 @@
             }
         }
         el.schemeDetails.innerHTML = `
-            <div class="detail-heading"><div><span class="scheme-status">May Be Eligible</span><h2 id="scheme-details-title">${escHtml(scheme.name)}</h2><p>${escHtml(scheme.description)}</p></div><span class="official-mark">Official source listed</span></div>
+            <div class="detail-heading"><div><span class="scheme-status">You Are Eligible</span><h2 id="scheme-details-title">${escHtml(scheme.name)}</h2><p>${escHtml(scheme.description)}</p></div><span class="official-mark">Official source listed</span></div>
             <div class="detail-grid">
                 <section class="detail-section"><h3>Benefits</h3><p>${escHtml(scheme.benefits)}</p></section>
                 <section class="detail-section"><h3>Detailed eligibility</h3><p>${escHtml(scheme.eligibilityDetails)}</p></section>
@@ -1544,7 +1544,7 @@
             recommendedSchemes: 'Recommended schemes', schemesDescription: 'A short view of the benefits that may fit your profile.',
             myDocuments: 'My Documents', documentsDescription: 'View and manage uploaded IDs', myProfile: 'My Profile',
             profileDescription: 'Update profile for better matches', seeMore: 'See more', profileUsed: 'Profile used',
-            documentsAvailable: 'Documents available', assessment: 'Assessment', mayBeEligible: 'May Be Eligible', profileChecked: 'Profile checked',
+            documentsAvailable: 'Documents available', assessment: 'Assessment', youAreEligible: 'You Are Eligible', profileChecked: 'Profile checked',
             noSchemes: 'No verified schemes available', noSchemesDescription: 'No approved scheme records have been imported yet.', loadingSchemes: 'Loading recommended schemes…', unavailable: 'Government schemes are unavailable', connectDatabase: 'Connect the database to load the official scheme catalogue.', morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening',
             chatTitle: 'Ask about government schemes', chatDescription: 'Ask about benefits, eligibility, documents, deadlines, or how to apply.', chatPlaceholder: 'Ask a question about schemes...', send: 'Send', online: 'Online', chatDisclaimer: 'Answers are guidance only. The official government authority makes the final decision.', chatWelcome: 'Ask me anything about the approved government schemes.', you: 'You'
         },
@@ -1554,7 +1554,7 @@
             recommendedSchemes: 'अनुशंसित योजनाएं', schemesDescription: 'आपकी प्रोफ़ाइल के अनुसार लाभों का संक्षिप्त विवरण।',
             myDocuments: 'मेरे दस्तावेज़', documentsDescription: 'अपलोड किए गए पहचान दस्तावेज़ देखें और प्रबंधित करें', myProfile: 'मेरी प्रोफ़ाइल',
             profileDescription: 'बेहतर सुझावों के लिए प्रोफ़ाइल अपडेट करें', seeMore: 'और देखें', profileUsed: 'प्रोफ़ाइल का उपयोग',
-            documentsAvailable: 'उपलब्ध दस्तावेज़', assessment: 'आकलन', mayBeEligible: 'पात्र हो सकते हैं', profileChecked: 'प्रोफ़ाइल जांची गई',
+            documentsAvailable: 'उपलब्ध दस्तावेज़', assessment: 'आकलन', youAreEligible: 'आप पात्र हैं', profileChecked: 'प्रोफ़ाइल जांची गई',
             noSchemes: 'कोई सत्यापित योजना उपलब्ध नहीं', noSchemesDescription: 'अभी तक कोई स्वीकृत योजना रिकॉर्ड आयात नहीं किया गया है।', loadingSchemes: 'अनुशंसित योजनाएं लोड हो रही हैं…', unavailable: 'सरकारी योजनाएं उपलब्ध नहीं हैं', connectDatabase: 'आधिकारिक योजना सूची लोड करने के लिए डेटाबेस कनेक्ट करें।', morning: 'सुप्रभात', afternoon: 'नमस्कार', evening: 'शुभ संध्या',
             chatTitle: 'सरकारी योजनाओं के बारे में पूछें', chatDescription: 'लाभ, पात्रता, दस्तावेज़, समय सीमा या आवेदन प्रक्रिया के बारे में पूछें।', chatPlaceholder: 'योजनाओं के बारे में सवाल पूछें...', send: 'भेजें', online: 'ऑनलाइन', chatDisclaimer: 'उत्तर केवल मार्गदर्शन हैं। अंतिम निर्णय सरकारी प्राधिकरण का होगा।', chatWelcome: 'स्वीकृत सरकारी योजनाओं के बारे में कुछ भी पूछें।', you: 'आप'
         },
@@ -1564,7 +1564,7 @@
             recommendedSchemes: 'ಶಿಫಾರಸು ಮಾಡಿದ ಯೋಜನೆಗಳು', schemesDescription: 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ಗೆ ಹೊಂದುವ ಪ್ರಯೋಜನಗಳ ಸಂಕ್ಷಿಪ್ತ ನೋಟ.',
             myDocuments: 'ನನ್ನ ದಾಖಲೆಗಳು', documentsDescription: 'ಅಪ್‌ಲೋಡ್ ಮಾಡಿದ ಗುರುತಿನ ದಾಖಲೆಗಳನ್ನು ನೋಡಿ ಮತ್ತು ನಿರ್ವಹಿಸಿ', myProfile: 'ನನ್ನ ಪ್ರೊಫೈಲ್',
             profileDescription: 'ಉತ್ತಮ ಹೊಂದಾಣಿಕೆಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಿ', seeMore: 'ಇನ್ನಷ್ಟು ನೋಡಿ', profileUsed: 'ಬಳಸಿದ ಪ್ರೊಫೈಲ್',
-            documentsAvailable: 'ಲಭ್ಯವಿರುವ ದಾಖಲೆಗಳು', assessment: 'ಮೌಲ್ಯಮಾಪನ', mayBeEligible: 'ಅರ್ಹರಾಗಿರಬಹುದು', profileChecked: 'ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
+            documentsAvailable: 'ಲಭ್ಯವಿರುವ ದಾಖಲೆಗಳು', assessment: 'ಮೌಲ್ಯಮಾಪನ', youAreEligible: 'ನೀವು ಅರ್ಹರಾಗಿದ್ದೀರಿ', profileChecked: 'ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
             noSchemes: 'ಯಾವುದೇ ಪರಿಶೀಲಿಸಿದ ಯೋಜನೆಗಳು ಲಭ್ಯವಿಲ್ಲ', noSchemesDescription: 'ಯಾವುದೇ ಅನುಮೋದಿತ ಯೋಜನೆ ದಾಖಲೆಗಳನ್ನು ಇನ್ನೂ ಆಮದು ಮಾಡಲಾಗಿಲ್ಲ।', loadingSchemes: 'ಶಿಫಾರಸು ಮಾಡಿದ ಯೋಜನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…', unavailable: 'ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು ಲಭ್ಯವಿಲ್ಲ', connectDatabase: 'ಅಧಿಕೃತ ಯೋಜನೆಗಳ ಪಟ್ಟಿಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕಿಸಿ.', morning: 'ಶುಭೋದಯ', afternoon: 'ನಮಸ್ಕಾರ', evening: 'ಶುಭ ಸಂಜೆ',
             chatTitle: 'ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಕೇಳಿ', chatDescription: 'ಪ್ರಯೋಜನಗಳು, ಅರ್ಹತೆ, ದಾಖಲೆಗಳು, ಗಡುವುಗಳು ಅಥವಾ ಅರ್ಜಿ ಪ್ರಕ್ರಿಯೆಯ ಬಗ್ಗೆ ಕೇಳಿ.', chatPlaceholder: 'ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಪ್ರಶ್ನೆ ಕೇಳಿ...', send: 'ಕಳುಹಿಸಿ', online: 'ಆನ್‌ಲೈನ್', chatDisclaimer: 'ಉತ್ತರಗಳು ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ಮಾತ್ರ. ಅಂತಿಮ ನಿರ್ಧಾರವನ್ನು ಸರ್ಕಾರಿ ಪ್ರಾಧಿಕಾರ ಮಾಡುತ್ತದೆ.', chatWelcome: 'ಅನುಮೋದಿತ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ.', you: 'ನೀವು'
         }

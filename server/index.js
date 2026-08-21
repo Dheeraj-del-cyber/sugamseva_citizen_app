@@ -135,7 +135,7 @@ function assessScheme(row, profile, documents) {
             if (row.age_max !== null && age > row.age_max) blockers.push('Age requirement not met');
         }
     }
-    const status = blockers.length ? 'May Be Eligible' : (known.length ? 'May Be Eligible' : 'May Be Eligible');
+    const status = blockers.length ? 'May Be Eligible' : (known.length ? 'You Are Eligible' : 'You Are Eligible');
     return { status, reasons: blockers, missingDocuments };
 }
 
