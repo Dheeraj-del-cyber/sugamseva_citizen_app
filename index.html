@@ -106,6 +106,8 @@
                     <button class="filter-chip" data-filter="Passport">Passport</button>
                     <button class="filter-chip" data-filter="Driving Licence">Licence</button>
                     <button class="filter-chip" data-filter="Voter ID">Voter ID</button>
+                    <button class="filter-chip" data-filter="Income Certificate">Income</button>
+                    <button class="filter-chip" data-filter="Birth Certificate">Birth Cert</button>
                 </div>
                 </div>
 
@@ -206,6 +208,10 @@
                                 <option value="Passport">Passport</option>
                                 <option value="Income Certificate">Income Certificate</option>
                                 <option value="Education Certificate">Education Certificate</option>
+                                <option value="Birth Certificate">Birth Certificate</option>
+                                <option value="Disability Certificate">Disability Certificate</option>
+                                <option value="Ration Card">Ration Card</option>
+                                <option value="EWS Certificate">EWS Certificate</option>
                                 <option value="Other">Other</option>
                             </select>
                             <div id="other-document-name-group" class="form-group hidden">
@@ -228,6 +234,22 @@
                                 Connect DigiLocker
                             </button>
                         </div>
+
+                        <!-- Where can I get it? -->
+                        <div id="doc-guide" class="doc-guide hidden">
+                            <div class="doc-guide-inner">
+                                <p class="doc-guide-prompt">Don't have this document?</p>
+                                <button type="button" class="doc-guide-toggle" id="doc-guide-toggle">Where can I get it? <span aria-hidden="true">&#9660;</span></button>
+                                <div id="doc-guide-card" class="doc-guide-card hidden">
+                                    <h4 id="doc-guide-title"></h4>
+                                    <p id="doc-guide-desc" class="doc-guide-desc"></p>
+                                    <p class="doc-guide-where"><strong>Where to get it:</strong></p>
+                                    <p id="doc-guide-where-text" class="doc-guide-where-text"></p>
+                                    <a id="doc-guide-link" href="#" target="_blank" rel="noopener" class="btn btn-primary doc-guide-btn">Official Government Website &#8599;</a>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Hidden file input -->
                         <input type="file" id="file-input" class="hidden" accept="image/*,.pdf">
                     </div>

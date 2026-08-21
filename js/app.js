@@ -44,6 +44,178 @@
     const API_BASE = window.SUGAM_SEVA_API_BASE || '';
 
     // ============================================================
+    //  Document Guide Data
+    // ============================================================
+    const DOCUMENT_GUIDE = {
+        'Aadhaar Card': {
+            title: 'Aadhaar Card',
+            description: 'A 12-digit unique identity number issued by UIDAI (Unique Identification Authority of India). It is required for most government services and schemes.',
+            where: 'Apply at your nearest Aadhaar Enrolment Centre or update details online through the UIDAI portal.',
+            url: 'https://uidai.gov.in/',
+            label: 'UIDAI — Official Government Website',
+            stateSpecific: false,
+        },
+        'PAN Card': {
+            title: 'PAN Card',
+            description: 'Permanent Account Number issued by the Income Tax Department. Used for financial transactions and tax filing.',
+            where: 'Apply online through NSDL (Protean) or UTIITSL. Processing takes about 15–20 days.',
+            url: 'https://www.onlineservices.nsdl.com/paam/endUserRegisterContact.html',
+            label: 'Protean (NSDL) — Official Government Website',
+            stateSpecific: false,
+        },
+        'Driving Licence': {
+            title: 'Driving Licence',
+            description: 'A valid driving licence issued by your Regional Transport Office (RTO) is required to operate motor vehicles legally.',
+            where: 'Apply through the Parivahan Sewa portal. You can apply for a learner\u2019s licence first, then a permanent one.',
+            url: 'https://parivahan.gov.in/parivahan/',
+            label: 'Parivahan Sewa — Official Government Website',
+            stateSpecific: false,
+        },
+        'Disability Certificate': {
+            title: 'Disability Certificate (UDID)',
+            description: 'A certificate issued under the UDID (Unique Disability ID) project by the Department of Empowerment of Persons with Disabilities. Required for disability-related benefits and reservations.',
+            where: 'Apply through the Swavlamban / UDID portal. You can also visit your District Disability Rehabilitation Centre.',
+            url: 'https://udid.gov.in/',
+            label: 'UDID Swavlamban — Official Government Website',
+            stateSpecific: false,
+        },
+        'Voter ID': {
+            title: 'Voter ID Card (EPIC)',
+            description: 'Electors Photo Identity Card issued by the Election Commission of India. Required to vote in elections.',
+            where: 'Apply online through the Voters\u2019 Service Portal or visit your local Electoral Registration Office.',
+            url: 'https://voters.eci.gov.in/',
+            label: 'Election Commission of India — Official Government Website',
+            stateSpecific: false,
+        },
+        'Passport': {
+            title: 'Passport',
+            description: 'An official travel document issued by the Ministry of External Affairs for international travel.',
+            where: 'Apply through the Passport Seva portal. Book an appointment at your nearest Passport Seva Kendra.',
+            url: 'https://www.passportindia.gov.in/',
+            label: 'Passport Seva — Official Government Website',
+            stateSpecific: false,
+        },
+        'Income Certificate': {
+            title: 'Income Certificate',
+            description: 'An official document certifying your annual household income. Required for many scholarship, subsidy, and welfare schemes.',
+            where: 'Apply through your State Government\u2019s official portal. This is a state-level document.',
+            url: null,
+            label: null,
+            stateSpecific: true,
+            statePortals: {
+                'Andhra Pradesh': { url: 'https://meeseva.gov.in/ap/home.do', label: 'MeeSeva — Andhra Pradesh' },
+                'Bihar': { url: 'https://serviceonline.gov.in/bihar/', label: 'Service Online — Bihar' },
+                'Chhattisgarh': { url: 'https://www.cgstate.gov.in/', label: 'CG State Portal' },
+                'Delhi': { url: 'https://delhigovt.nic.in/', label: 'Delhi Government Portal' },
+                'Gujarat': { url: 'https://digitalgujarat.gov.in/', label: 'Digital Gujarat' },
+                'Haryana': { url: 'https://csgharana.gov.in/', label: 'HarChawb — Haryana' },
+                'Karnataka': { url: 'https://sevasindhu.karnataka.gov.in/', label: 'Seva Sindhu — Karnataka' },
+                'Kerala': { url: 'https://edistrict.kerala.gov.in/', label: 'e-District — Kerala' },
+                'Madhya Pradesh': { url: 'https://mp.gov.in/', label: 'MP State Portal' },
+                'Maharashtra': { url: 'https://aaplesarkar.mahaonline.gov.in/', label: 'Aaple Sarkar — Maharashtra' },
+                'Odisha': { url: 'https://edistrict.odisha.gov.in/', label: 'e-District — Odisha' },
+                'Punjab': { url: 'https://connect.punjab.gov.in/', label: 'Connect — Punjab' },
+                'Rajasthan': { url: 'https://sso.rajasthan.gov.in/', label: 'SSO — Rajasthan' },
+                'Tamil Nadu': { url: 'https://www.tnesevai.tn.gov.in/', label: 'TN e-Sevai' },
+                'Telangana': { url: 'https://meeSeva.telangana.gov.in/', label: 'MeeSeva — Telangana' },
+                'Uttar Pradesh': { url: 'https://edistrict.up.gov.in/', label: 'e-District — Uttar Pradesh' },
+                'West Bengal': { url: 'https://wbpdw.gov.in/', label: 'West Bengal Portal' },
+            },
+        },
+        'Education Certificate': {
+            title: 'Education Certificate',
+            description: 'Marksheets, degree certificates, or provisional certificates issued by recognised educational institutions or boards.',
+            where: 'Obtain from your school, college, or university. DigiLocker may also have digitally verified copies.',
+            url: 'https://www.digilocker.gov.in/',
+            label: 'DigiLocker — Official Government Website',
+            stateSpecific: false,
+        },
+        'Birth Certificate': {
+            title: 'Birth Certificate',
+            description: 'An official record of birth issued by the Registrar General of India or local municipal authority.',
+            where: 'Apply through your State\u2019s Civil Registration System (CRS) portal or local municipal corporation.',
+            url: null,
+            label: null,
+            stateSpecific: true,
+            statePortals: {
+                'Andhra Pradesh': { url: 'https://meeSeva.gov.in/ap/home.do', label: 'MeeSeva — Andhra Pradesh' },
+                'Bihar': { url: 'https://serviceonline.gov.in/bihar/', label: 'Service Online — Bihar' },
+                'Delhi': { url: 'https://delhigovt.nic.in/', label: 'Delhi Government Portal' },
+                'Gujarat': { url: 'https://digitalgujarat.gov.in/', label: 'Digital Gujarat' },
+                'Karnataka': { url: 'https://sevasindhu.karnataka.gov.in/', label: 'Seva Sindhu — Karnataka' },
+                'Kerala': { url: 'https://edistrict.kerala.gov.in/', label: 'e-District — Kerala' },
+                'Madhya Pradesh': { url: 'https://mp.gov.in/', label: 'MP State Portal' },
+                'Maharashtra': { url: 'https://aaplesarkar.mahaonline.gov.in/', label: 'Aaple Sarkar — Maharashtra' },
+                'Rajasthan': { url: 'https://sso.rajasthan.gov.in/', label: 'SSO — Rajasthan' },
+                'Tamil Nadu': { url: 'https://www.tnesevai.tn.gov.in/', label: 'TN e-Sevai' },
+                'Telangana': { url: 'https://meeSeva.telangana.gov.in/', label: 'MeeSeva — Telangana' },
+                'Uttar Pradesh': { url: 'https://edistrict.up.gov.in/', label: 'e-District — Uttar Pradesh' },
+                'West Bengal': { url: 'https://wbpdw.gov.in/', label: 'West Bengal Portal' },
+            },
+        },
+        'Ration Card': {
+            title: 'Ration Card',
+            description: 'A document issued under the National Food Security Act (NFSA) for subsidised food grains. Also used as identity and address proof.',
+            where: 'Apply through your State\u2019s Food and Civil Supplies department portal.',
+            url: null,
+            label: null,
+            stateSpecific: true,
+            statePortals: {
+                'Andhra Pradesh': { url: 'https://epds.apfood.gov.in/', label: 'ePDS — Andhra Pradesh' },
+                'Bihar': { url: 'https://epds.bihar.gov.in/', label: 'ePDS — Bihar' },
+                'Delhi': { url: 'https://delhigovt.nic.in/', label: 'Delhi Government Portal' },
+                'Gujarat': { url: 'https://digitalgujarat.gov.in/', label: 'Digital Gujarat' },
+                'Karnataka': { url: 'https://ahara.kar.nic.in/', label: 'AHARA — Karnataka' },
+                'Kerala': { url: 'https://kfood.kerala.gov.in/', label: 'Food Kerala' },
+                'Madhya Pradesh': { url: 'https://mp.gov.in/', label: 'MP State Portal' },
+                'Maharashtra': { url: 'https://aaplesarkar.mahaonline.gov.in/', label: 'Aaple Sarkar — Maharashtra' },
+                'Rajasthan': { url: 'https://sso.rajasthan.gov.in/', label: 'SSO — Rajasthan' },
+                'Tamil Nadu': { url: 'https://www.tnesevai.tn.gov.in/', label: 'TN e-Sevai' },
+                'Telangana': { url: 'https://epds.telangana.gov.in/', label: 'ePDS — Telangana' },
+                'Uttar Pradesh': { url: 'https://fcs.up.gov.in/', label: 'FCS — Uttar Pradesh' },
+                'West Bengal': { url: 'https://wbpds.wb.gov.in/', label: 'wbpDS — West Bengal' },
+            },
+        },
+        'EWS Certificate': {
+            title: 'EWS Certificate (Economically Weaker Section)',
+            description: 'A certificate confirming your family\u2019s economic status for reservation under the 10% EWS quota.',
+            where: 'Apply through your State Government\u2019s official portal. Requirements vary by state.',
+            url: null,
+            label: null,
+            stateSpecific: true,
+            statePortals: {
+                'Delhi': { url: 'https://edistrict.delhigovt.nic.in/', label: 'e-District — Delhi' },
+                'Gujarat': { url: 'https://digitalgujarat.gov.in/', label: 'Digital Gujarat' },
+                'Karnataka': { url: 'https://sevasindhu.karnataka.gov.in/', label: 'Seva Sindhu — Karnataka' },
+                'Kerala': { url: 'https://edistrict.kerala.gov.in/', label: 'e-District — Kerala' },
+                'Madhya Pradesh': { url: 'https://mp.gov.in/', label: 'MP State Portal' },
+                'Maharashtra': { url: 'https://aaplesarkar.mahaonline.gov.in/', label: 'Aaple Sarkar — Maharashtra' },
+                'Rajasthan': { url: 'https://sso.rajasthan.gov.in/', label: 'SSO — Rajasthan' },
+                'Tamil Nadu': { url: 'https://www.tnesevai.tn.gov.in/', label: 'TN e-Sevai' },
+                'Uttar Pradesh': { url: 'https://edistrict.up.gov.in/', label: 'e-District — Uttar Pradesh' },
+                'West Bengal': { url: 'https://wbpdw.gov.in/', label: 'West Bengal Portal' },
+            },
+        },
+    };
+
+    function getDocGuideData(docType) {
+        const guide = DOCUMENT_GUIDE[docType];
+        if (!guide) return null;
+        if (guide.stateSpecific && guide.statePortals) {
+            const userState = state.profile.state || '';
+            const portal = guide.statePortals[userState];
+            if (portal) {
+                return { ...guide, url: portal.url, label: portal.label };
+            }
+            // Fallback: show the first available portal
+            const firstKey = Object.keys(guide.statePortals)[0];
+            const fallback = guide.statePortals[firstKey];
+            return { ...guide, url: fallback.url, label: `${fallback.label} (example — select your own state)`, fallback: true };
+        }
+        return guide;
+    }
+
+    // ============================================================
     //  DOM References
     // ============================================================
     const el = {
@@ -121,6 +293,15 @@
         optGallery:    id('opt-gallery'),
         optCamera:     id('opt-camera'),
         optDigiLocker: id('opt-digilocker'),
+
+        // Document guide
+        docGuide:      id('doc-guide'),
+        docGuideToggle: id('doc-guide-toggle'),
+        docGuideCard:  id('doc-guide-card'),
+        docGuideTitle: id('doc-guide-title'),
+        docGuideDesc:  id('doc-guide-desc'),
+        docGuideWhereText: id('doc-guide-where-text'),
+        docGuideLink:  id('doc-guide-link'),
 
         // DigiLocker
         digiConnectBtn: id('digilocker-connect-btn'),
@@ -986,6 +1167,37 @@
         el.otherDocumentName.required = false;
         state.pendingDocType   = null;
         state.camera.capturedData = null;
+        el.docGuide.classList.add('hidden');
+        el.docGuideCard.classList.add('hidden');
+        el.docGuideToggle.setAttribute('aria-expanded', 'false');
+        el.docGuideToggle.querySelector('span').innerHTML = '&#9660;';
+    }
+
+    function showDocGuide(docType) {
+        const data = getDocGuideData(docType);
+        if (!data) {
+            el.docGuide.classList.add('hidden');
+            return;
+        }
+        el.docGuide.classList.remove('hidden');
+        el.docGuideCard.classList.add('hidden');
+        el.docGuideToggle.setAttribute('aria-expanded', 'false');
+        el.docGuideToggle.querySelector('span').innerHTML = '&#9660;';
+        el.docGuideTitle.textContent = data.title;
+        el.docGuideDesc.textContent = data.description;
+        el.docGuideWhereText.textContent = data.where;
+        // Remove any previous fallback messages
+        el.docGuideCard.querySelectorAll('.doc-guide-fallback').forEach(el => el.remove());
+        if (data.url) {
+            el.docGuideLink.href = data.url;
+            el.docGuideLink.textContent = (data.label || 'Official Government Website') + ' \u2197';
+            el.docGuideLink.classList.remove('hidden');
+            if (data.fallback) {
+                el.docGuideLink.insertAdjacentHTML('afterend', '<p class="doc-guide-fallback">Update your state in My Profile to get a direct link to your state\u2019s portal.</p>');
+            }
+        } else {
+            el.docGuideLink.classList.add('hidden');
+        }
     }
 
     function closeUploadModal() {
@@ -1388,6 +1600,15 @@
             el.otherDocumentNameGroup.classList.toggle('hidden', !isOther);
             el.otherDocumentName.required = isOther;
             if (!isOther) el.otherDocumentName.value = '';
+            showDocGuide(type);
+        });
+
+        el.docGuideToggle.addEventListener('click', () => {
+            const card = el.docGuideCard;
+            const isOpen = !card.classList.contains('hidden');
+            card.classList.toggle('hidden');
+            el.docGuideToggle.setAttribute('aria-expanded', String(!isOpen));
+            el.docGuideToggle.querySelector('span').innerHTML = isOpen ? '&#9660;' : '&#9650;';
         });
 
         // Upload options
