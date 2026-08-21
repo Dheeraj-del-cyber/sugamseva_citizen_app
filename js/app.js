@@ -149,6 +149,8 @@
 
     function boot() {
         loadSession();
+        state.isSignUpMode = !state.currentUser && loadUserRecords().length === 0;
+        if (state.currentUser) state.currentView = 'home';
         loadDocuments();
         loadProfile();
         bindEvents();
@@ -439,8 +441,9 @@
         users.push(userRecord);
         localStorage.setItem(KEYS.USER_DB, JSON.stringify(users));
 
-        pendingUser = { name, mobile, email, id: userRecord.id };
-        showBiometricSetup();
+        pendingUser = null;
+        state.isSignUpMode = false;
+        route();
     }
 
     function handleSignIn() {
