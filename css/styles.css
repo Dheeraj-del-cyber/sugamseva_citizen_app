@@ -2250,6 +2250,95 @@ select.form-control {
     text-align: right;
 }
 
+.scheme-status-warning {
+    color: var(--color-warning-text);
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning-bd);
+}
+
+.scheme-missing-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: var(--space-3);
+    background: var(--color-error-bg);
+    border: 1px solid var(--color-error-bd);
+    border-radius: var(--radius-sm, 6px);
+    color: var(--color-error);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    text-align: left;
+}
+
+.scheme-missing-toggle:hover {
+    background: #FEE2E2;
+    box-shadow: 0 1px 4px rgba(220, 38, 38, 0.12);
+}
+
+.scheme-missing-toggle:focus-visible {
+    outline: 2px solid var(--color-error);
+    outline-offset: 2px;
+}
+
+.scheme-missing-toggle svg:first-child {
+    flex-shrink: 0;
+}
+
+.scheme-missing-toggle span {
+    flex: 1;
+}
+
+.scheme-missing-chevron {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.scheme-missing-toggle[aria-expanded="true"] .scheme-missing-chevron {
+    transform: rotate(180deg);
+}
+
+.scheme-missing-details {
+    overflow: hidden;
+    max-height: 300px;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.25s ease;
+    opacity: 1;
+    margin-bottom: var(--space-3);
+}
+
+.scheme-missing-details.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
+
+.scheme-missing-details ul {
+    list-style: none;
+    margin: 0;
+    padding: 12px;
+    background: var(--color-error-bg);
+    border: 1px solid var(--color-error-bd);
+    border-radius: var(--radius-sm, 6px);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.scheme-missing-details li {
+    color: var(--color-error);
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: #fff;
+    border: 1px solid var(--color-error-bd);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    line-height: 1.4;
+}
+
 .scheme-description {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);

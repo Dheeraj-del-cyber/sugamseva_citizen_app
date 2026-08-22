@@ -941,14 +941,34 @@
             el.schemeGrid.innerHTML = `<div class="empty-state scheme-empty"><svg class="empty-state-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>${text.unavailable}</h3><p>${text.connectDatabase}</p></div>`;
             return;
         }
-        el.schemeGrid.innerHTML = state.schemes.map(scheme => `
+        el.schemeGrid.innerHTML = state.schemes.map(scheme => {
+            const firstReason = scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : '';
+            const isMissing = firstReason.startsWith('Missing: ');
+            const missingItems = isMissing ? firstReason.substring(9).split(', ').map(d => d.trim()).filter(Boolean) : [];
+            const statusLabel = scheme.assessment.status === 'You Are Eligible' ? text.youAreEligible : scheme.assessment.status;
+            const matchLabel = isMissing ? '' : (firstReason || text.profileChecked);
+            return `
             <article class="scheme-card">
-                <div class="scheme-card-top"><span class="scheme-status">${escHtml(scheme.assessment.status === 'You Are Eligible' ? text.youAreEligible : scheme.assessment.status)}</span><span class="scheme-match">${escHtml(scheme.assessment.reasons.length ? scheme.assessment.reasons[0] : text.profileChecked)}</span></div>
+                <div class="scheme-card-top">
+                    <span class="scheme-status${isMissing ? ' scheme-status-warning' : ''}">${escHtml(statusLabel)}</span>
+                    ${matchLabel ? `<span class="scheme-match">${escHtml(matchLabel)}</span>` : ''}
+                </div>
+                ${isMissing ? `
+                <button type="button" class="scheme-missing-toggle" data-scheme-missing-id="${scheme.id}" aria-expanded="false" aria-controls="missing-details-${scheme.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>Missing ${missingItems.length} document${missingItems.length !== 1 ? 's' : ''}</span>
+                    <svg class="scheme-missing-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="scheme-missing-details collapsed" id="missing-details-${scheme.id}">
+                    <ul>${missingItems.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
+                </div>
+                ` : ''}
                 <h3>${escHtml(scheme.name)}</h3>
                 <p class="scheme-description">${escHtml(scheme.shortDescription)}</p>
                 <button type="button" class="btn btn-primary scheme-see-more" data-scheme-details="${scheme.id}">${text.seeMore} <span aria-hidden="true">&rarr;</span></button>
             </article>
-        `).join('');
+        `;
+        }).join('');
     }
 
     function findScheme(id) {
@@ -1404,6 +1424,17 @@
                     state.profileEditing = true;
                     renderProfile(true);
                 });
+                return;
+            }
+            const missingToggle = e.target.closest('.scheme-missing-toggle');
+            if (missingToggle) {
+                const schemeId = missingToggle.dataset.schemeMissingId;
+                const details = document.getElementById('missing-details-' + schemeId);
+                if (details) {
+                    details.classList.toggle('collapsed');
+                    const expanded = !details.classList.contains('collapsed');
+                    missingToggle.setAttribute('aria-expanded', String(expanded));
+                }
                 return;
             }
             const detailsButton = e.target.closest('[data-scheme-details]');
