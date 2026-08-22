@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
 import { query } from './db.js';
+import { initializeDatabase } from './bootstrap.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -297,4 +298,10 @@ app.use((error, _req, res, _next) => {
     res.status(500).json({ error: 'The service could not complete the request.' });
 });
 
-app.listen(port, () => console.log(`Sugam Seva server listening on http://localhost:${port}`));
+try {
+    await initializeDatabase(root);
+    app.listen(port, () => console.log(`Sugam Seva server listening on http://localhost:${port}`));
+} catch (error) {
+    console.error('Startup database initialization failed:', error.message);
+    process.exitCode = 1;
+}
