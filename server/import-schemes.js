@@ -3,8 +3,6 @@ import process from 'node:process';
 import { pool, query } from './db.js';
 
 const inputPath = process.argv[2];
-const allowedHost = /(^|\.)gov\.in$/i;
-
 function required(value, field) {
     if (value === undefined || value === null || value === '') throw new Error(`Missing ${field}`);
     return value;
@@ -12,8 +10,8 @@ function required(value, field) {
 
 function officialUrl(value, field) {
     const url = new URL(required(value, field));
-    if (url.protocol !== 'https:' || !allowedHost.test(url.hostname)) {
-        throw new Error(`${field} must be an HTTPS government URL`);
+    if (url.protocol !== 'https:') {
+        throw new Error(`${field} must be an HTTPS URL`);
     }
     return url.toString();
 }

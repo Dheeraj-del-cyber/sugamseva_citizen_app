@@ -5,7 +5,7 @@
   "description": "Sugam Seva scheme recommendation service",
   "type": "module",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "npm run db:migrate && npm run import:schemes -- ./approved-schemes.json && node server/index.js",
     "dev": "node --watch server/index.js",
     "db:migrate": "node server/migrate.js",
     "import:schemes": "node server/import-schemes.js"
