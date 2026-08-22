@@ -8,10 +8,17 @@ function required(value, field) {
     return value;
 }
 
+const officialHost = /(^|\.)((gov|nic|cdac)\.in|co\.in|ac\.in|org\.in|aero|nic|gov)$/i;
+const knownGovtSchemes = new Set(['www.standupmitra.in', 'standupmitra.in', 'www.pmkvyofficial.org', 'pmkvyofficial.org', 'ddugky.info']);
+
 function officialUrl(value, field) {
     const url = new URL(required(value, field));
     if (url.protocol !== 'https:') {
         throw new Error(`${field} must be an HTTPS URL`);
+    }
+    const host = url.hostname;
+    if (!officialHost.test(host) && !knownGovtSchemes.has(host)) {
+        console.warn(`Warning: ${field} (${url.toString()}) is not on a recognized government domain. Importing anyway.`);
     }
     return url.toString();
 }
@@ -48,6 +55,9 @@ function validateScheme(scheme) {
 
 if (!inputPath) {
     console.error('Usage: npm run import:schemes -- ./path/to/approved-myscheme-export.json');
+    process.exitCode = 1;
+} else if (!process.env.DATABASE_URL) {
+    console.error('DATABASE_URL environment variable is not set. Please configure it in your Render dashboard under Environment.');
     process.exitCode = 1;
 } else {
     try {

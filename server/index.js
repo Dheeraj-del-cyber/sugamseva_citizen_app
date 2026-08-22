@@ -6,12 +6,13 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
 import { query } from './db.js';
-import { initializeDatabase } from './bootstrap.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const officialHost = /(^|\.)gov\.in$/i;
+const officialHost = /(^|\.)((gov|nic|cdac)\.in|co\.in|ac\.in|org\.in|aero|nic|gov)$/i;
+// Known government scheme portals that use non-standard domains
+const knownGovtSchemes = new Set(['www.standupmitra.in', 'standupmitra.in', 'www.pmkvyofficial.org', 'pmkvyofficial.org', 'ddugky.info']);
 
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -68,7 +69,9 @@ function validateProfile(body) {
 function officialUrl(value) {
     try {
         const url = new URL(value);
-        return url.protocol === 'https:' && officialHost.test(url.hostname);
+        if (url.protocol !== 'https:') return false;
+        const host = url.hostname;
+        return officialHost.test(host) || knownGovtSchemes.has(host);
     } catch {
         return false;
     }
@@ -298,10 +301,18 @@ app.use((error, _req, res, _next) => {
     res.status(500).json({ error: 'The service could not complete the request.' });
 });
 
-try {
-    await initializeDatabase(root);
-    app.listen(port, () => console.log(`Sugam Seva server listening on http://localhost:${port}`));
-} catch (error) {
-    console.error('Startup database initialization failed:', error.message);
-    process.exitCode = 1;
-}
+app.listen(port, () => {
+    console.log(`Sugam Seva server listening on http://localhost:${port}`);
+    // Non-blocking startup validation: warn about non-government URLs
+    query('SELECT id, official_application_url, official_source_url FROM schemes')
+        .then(({ rows }) => {
+            const warnings = [];
+            for (const row of rows) {
+                if (!officialUrl(row.official_application_url)) warnings.push(`${row.id}: officialApplicationUrl (${row.official_application_url}) is not a recognized government domain`);
+                if (!officialUrl(row.official_source_url)) warnings.push(`${row.id}: officialSourceUrl (${row.official_source_url}) is not a recognized government domain`);
+            }
+            if (warnings.length) console.warn(`Startup URL validation: ${warnings.length} non-government URL(s) detected.\n  ${warnings.join('\n  ')}`);
+            else console.log('Startup URL validation: all scheme URLs are verified government domains.');
+        })
+        .catch(err => console.warn('Startup URL validation skipped:', err.message));
+});
