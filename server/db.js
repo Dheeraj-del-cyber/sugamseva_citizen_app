@@ -12,7 +12,8 @@ export const pool = new Pool({
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : undefined,
+    // Render PostgreSQL uses a self-signed certificate on its private connection.
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
 });
 
 export async function query(text, params) {
