@@ -202,6 +202,32 @@
                                 <option value="EWS Certificate">EWS Certificate</option>
                                 <option value="Other">Other</option>
                             </select>
+                            <div class="document-picker" id="document-picker">
+                                <button type="button" class="document-picker-trigger" id="document-picker-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                    <span class="document-picker-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    </span>
+                                    <span class="document-picker-value"><strong id="document-picker-label">Select document type</strong><small>Choose the document you want to add</small></span>
+                                    <svg class="document-picker-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="document-picker-menu" id="document-picker-menu" role="listbox" aria-label="Document types">
+                                    <p class="document-picker-heading">Identity &amp; certificates</p>
+                                    <div class="document-picker-grid">
+                                        <button type="button" class="document-picker-option" data-value="Aadhaar Card" role="option"><span class="picker-option-mark">A</span>Aadhaar Card</button>
+                                        <button type="button" class="document-picker-option" data-value="PAN Card" role="option"><span class="picker-option-mark">P</span>PAN Card</button>
+                                        <button type="button" class="document-picker-option" data-value="Driving Licence" role="option"><span class="picker-option-mark">D</span>Driving Licence</button>
+                                        <button type="button" class="document-picker-option" data-value="Voter ID" role="option"><span class="picker-option-mark">V</span>Voter ID</button>
+                                        <button type="button" class="document-picker-option" data-value="Passport" role="option"><span class="picker-option-mark">P</span>Passport</button>
+                                        <button type="button" class="document-picker-option" data-value="Income Certificate" role="option"><span class="picker-option-mark">I</span>Income Certificate</button>
+                                        <button type="button" class="document-picker-option" data-value="Education Certificate" role="option"><span class="picker-option-mark">E</span>Education Certificate</button>
+                                        <button type="button" class="document-picker-option" data-value="Birth Certificate" role="option"><span class="picker-option-mark">B</span>Birth Certificate</button>
+                                        <button type="button" class="document-picker-option" data-value="Disability Certificate" role="option"><span class="picker-option-mark">D</span>Disability Certificate</button>
+                                        <button type="button" class="document-picker-option" data-value="Ration Card" role="option"><span class="picker-option-mark">R</span>Ration Card</button>
+                                        <button type="button" class="document-picker-option" data-value="EWS Certificate" role="option"><span class="picker-option-mark">E</span>EWS Certificate</button>
+                                        <button type="button" class="document-picker-option" data-value="Other" role="option"><span class="picker-option-mark">+</span>Other document</button>
+                                    </div>
+                                </div>
+                            </div>
                             <div id="other-document-name-group" class="form-group hidden">
                                 <label for="other-document-name">Document name</label>
                                 <input type="text" id="other-document-name" class="form-control" maxlength="120" placeholder="Enter the document name">
@@ -209,9 +235,12 @@
                         </div>
                         <div id="upload-options" class="upload-options hidden">
                             <p class="options-label">How would you like to add this document?</p>
-                            <button class="upload-opt-btn" id="opt-gallery">
+                            <button class="upload-opt-btn upload-dropzone" id="opt-gallery" type="button" aria-describedby="upload-dropzone-hint">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                Gallery / File Picker
+                                <span class="upload-opt-copy">
+                                    <strong>Drop your document here</strong>
+                                    <small id="upload-dropzone-hint">or choose an image or PDF from your device</small>
+                                </span>
                             </button>
                             <button class="upload-opt-btn" id="opt-camera">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>

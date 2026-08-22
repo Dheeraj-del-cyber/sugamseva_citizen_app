@@ -267,6 +267,10 @@
         modalOverlay:  id('modal-overlay'),
         closeModalBtn: id('close-modal-btn'),
         docTypeSelect: id('doc-type'),
+        documentPicker: id('document-picker'),
+        documentPickerTrigger: id('document-picker-trigger'),
+        documentPickerLabel: id('document-picker-label'),
+        documentPickerMenu: id('document-picker-menu'),
         otherDocumentNameGroup: id('other-document-name-group'),
         otherDocumentName: id('other-document-name'),
         uploadOptions: id('upload-options'),
@@ -1239,6 +1243,10 @@
         resetModalSteps();
         el.uploadModal.classList.remove('hidden');
         el.docTypeSelect.value = '';
+        el.documentPickerLabel.textContent = 'Select document type';
+        el.documentPicker.classList.remove('is-open');
+        el.documentPickerTrigger.setAttribute('aria-expanded', 'false');
+        el.documentPicker.querySelectorAll('[role="option"]').forEach(option => option.setAttribute('aria-selected', 'false'));
         el.uploadOptions.classList.add('hidden');
         el.otherDocumentNameGroup.classList.add('hidden');
         el.otherDocumentName.value = '';
@@ -1660,19 +1668,41 @@
         });
 
         // Doc type select
-        el.docTypeSelect.addEventListener('change', () => {
-            const type = el.docTypeSelect.value;
-            if (type) {
-                state.pendingDocType = type;
+        const selectDocumentType = selectedType => {
+            el.docTypeSelect.value = selectedType;
+            if (selectedType) {
+                state.pendingDocType = selectedType;
                 el.uploadOptions.classList.remove('hidden');
             } else {
                 el.uploadOptions.classList.add('hidden');
             }
-            const isOther = type === 'Other';
+            const isOther = selectedType === 'Other';
             el.otherDocumentNameGroup.classList.toggle('hidden', !isOther);
             el.otherDocumentName.required = isOther;
             if (!isOther) el.otherDocumentName.value = '';
-            showDocGuide(type);
+            showDocGuide(selectedType);
+        };
+
+        el.docTypeSelect.addEventListener('change', () => selectDocumentType(el.docTypeSelect.value));
+        el.documentPickerTrigger.addEventListener('click', () => {
+            const isOpen = el.documentPicker.classList.toggle('is-open');
+            el.documentPickerTrigger.setAttribute('aria-expanded', String(isOpen));
+        });
+        el.documentPickerMenu.querySelectorAll('[role="option"]').forEach(option => {
+            option.addEventListener('click', () => {
+                const type = option.dataset.value;
+                el.documentPickerLabel.textContent = type === 'Other' ? 'Other document' : type;
+                el.documentPickerMenu.querySelectorAll('[role="option"]').forEach(item => item.setAttribute('aria-selected', String(item === option)));
+                el.documentPicker.classList.remove('is-open');
+                el.documentPickerTrigger.setAttribute('aria-expanded', 'false');
+                selectDocumentType(type);
+            });
+        });
+        document.addEventListener('click', e => {
+            if (!el.documentPicker.contains(e.target)) {
+                el.documentPicker.classList.remove('is-open');
+                el.documentPickerTrigger.setAttribute('aria-expanded', 'false');
+            }
         });
 
         el.docGuideToggle.addEventListener('click', () => {
@@ -1688,6 +1718,22 @@
 
         el.fileInput.addEventListener('change', () => {
             handleFileSelect(el.fileInput.files[0]);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            el.optGallery.addEventListener(eventName, e => {
+                e.preventDefault();
+                el.optGallery.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            el.optGallery.addEventListener(eventName, e => {
+                e.preventDefault();
+                el.optGallery.classList.remove('is-dragover');
+            });
+        });
+        el.optGallery.addEventListener('drop', e => {
+            handleFileSelect(e.dataTransfer.files[0]);
         });
 
         el.optCamera.addEventListener('click', startCamera);
