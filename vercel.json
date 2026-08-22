@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://sugamseva-citizen-app.onrender.com/api/:path*"
+    }
+  ]
+}
