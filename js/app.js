@@ -1846,7 +1846,7 @@
         event.preventDefault();
         const message = el.chatInput.value.trim();
         if (!message || el.chatSendBtn.disabled) return;
-        const history = [...state.chatMessages];
+        const history = state.chatMessages.slice(-8);
         state.chatMessages.push({ role: 'user', content: message });
         el.chatInput.value = '';
         el.chatSendBtn.disabled = true;

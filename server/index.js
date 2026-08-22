@@ -211,18 +211,13 @@ app.post('/api/chat', requireUser, async (req, res, next) => {
         if (!languageNames[language]) return res.status(400).json({ error: 'Choose English, Hindi, or Kannada.' });
 
         const schemesResult = await query(`${schemeSelect()} GROUP BY s.id, ser.rules ORDER BY s.name`, []);
-        const schemeContext = schemesResult.rows.map(row => ({
-            name: row.name,
-            description: row.description,
-            benefits: row.benefits,
-            eligibility: row.eligibility_details,
-            whoCanApply: row.who_can_apply,
-            documents: row.documents,
-            applicationProcedure: row.application_procedure,
-            deadline: row.deadline,
-            officialSourceUrl: row.official_source_url,
-            officialApplicationUrl: row.official_application_url,
-        }));
+        const MAX_CATALOGUE = 3000;
+        const schemeContext = schemesResult.rows.map(row => {
+            const desc = typeof row.description === 'string' ? row.description.slice(0, 80) : '';
+            return `${row.name}: ${desc}`;
+        });
+        let schemeCatalogue = schemeContext.join(', ');
+        if (schemeCatalogue.length > MAX_CATALOGUE) schemeCatalogue = schemeCatalogue.slice(0, MAX_CATALOGUE) + '…';
         const messages = [
             {
                 role: 'system',
@@ -236,7 +231,7 @@ STRICT RULES:
 5. Reply in ${languageNames[language]}. Be concise, clear, and helpful. Use simple language and short paragraphs.
 
 Catalogue of approved schemes:
-${JSON.stringify(schemeContext, null, 0)}`,
+${schemeCatalogue}`,
             },
             ...history.filter(item => ['user', 'assistant'].includes(item?.role) && typeof item?.content === 'string').map(item => ({ role: item.role, content: item.content.slice(0, 2000) })),
             { role: 'user', content: message },
@@ -253,7 +248,13 @@ ${JSON.stringify(schemeContext, null, 0)}`,
             body = await response.json().catch(() => null);
             if (response.ok) break;
         }
-        if (!response.ok) return res.status(502).json({ error: body?.error?.message || 'The chatbot could not answer right now.' });
+        if (!response.ok) {
+            const errMsg = body?.error?.message || '';
+            if (response.status === 413 || /entity|too large|payload/i.test(errMsg)) {
+                return res.status(502).json({ error: 'The question is too long. Please try a shorter question.' });
+            }
+            return res.status(502).json({ error: 'The chatbot could not answer right now.' });
+        }
         let answer = body?.choices?.[0]?.message?.content?.trim();
         if (!answer) return res.status(502).json({ error: 'The chatbot returned an empty answer.' });
         // Strip model thinking tags (<think>...</think>)
