@@ -1508,16 +1508,16 @@ select.form-control {
     content: '';
     position: absolute;
     z-index: -1;
-    right: -3%;
-    bottom: -2px;
-    width: 64%;
-    height: 100%;
+    right: -5%;
+    bottom: -6px;
+    width: 78%;
+    height: 108%;
     background: url('../image/image.png') right bottom / contain no-repeat;
-    opacity: 0.92;
+    opacity: 0.95;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 28%, #000 75%, transparent 100%), linear-gradient(to top, transparent 0%, #000 24%, #000 64%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 70%, transparent 100%), linear-gradient(to top, transparent 0%, #000 15%, #000 60%, transparent 100%);
     -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to right, transparent 0%, #000 28%, #000 75%, transparent 100%), linear-gradient(to top, transparent 0%, #000 24%, #000 64%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 70%, transparent 100%), linear-gradient(to top, transparent 0%, #000 15%, #000 60%, transparent 100%);
     mask-composite: intersect;
 }
 
@@ -2213,7 +2213,7 @@ select.form-control {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 50%, transparent 100%);
 }
 
 .scheme-card h3 {
@@ -3505,13 +3505,13 @@ select.form-control {
     }
 
     .home-header::before {
-        right: -12%;
+        right: -10%;
         bottom: 0;
-        width: 112%;
-        height: 58%;
-        opacity: 0.7;
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 20%, #000 64%, transparent 100%);
-        mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 20%, #000 64%, transparent 100%);
+        width: 108%;
+        height: 65%;
+        opacity: 0.82;
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 80%, transparent 100%), linear-gradient(to top, transparent 0%, #000 12%, #000 60%, transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 80%, transparent 100%), linear-gradient(to top, transparent 0%, #000 12%, #000 60%, transparent 100%);
     }
 
     .home-header-main { max-width: 100%; }
